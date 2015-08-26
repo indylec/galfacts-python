@@ -1,3 +1,4 @@
+<<<<<<< .merge_file_NUVMMY
 #This is just a set of CASA commands to smooth a cube, the example here is S1.
 #Not meant to be run out of the box, needs tweaking for whatever you're going to do with it.
 
@@ -15,3 +16,16 @@ imsmooth(imagename='s1cube.image',beam=galbeam,targetres=True,outfile='s1cubesmo
 exportfits('s1cubesmooth.image','s1cubesmooth.fits')
 
 #rinse and repeat 
+=======
+import os
+
+print "Running imsmooth script, producing smooth galfacts Q & U cubes for comparison with DRAO maps"
+
+galbeam={"major":"36arcmin","minor":"36arcmin","pa":"0deg"}
+
+####################################################
+########               S1                  #########
+####################################################
+
+print "smoothing S1"
+>>>>>>> .merge_file_slh2vX
