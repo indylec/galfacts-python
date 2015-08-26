@@ -27,8 +27,16 @@ map_header.remove('cdelt3')
 map_header.remove('crota3')
 map_header['OBJECT']='GALFACTS_{0} Polarised intensity map'.format(field)
 
-qdata=qin[0].data[0,:,:]
-udata=uin[0].data[0,:,:]
+if len(qin[0].data.shape) == 3:
+    qdata=qin[0].data[0,:,:]
+else:
+    qdata=qin[0].data
+if len(uin[0].data.shape) == 3:
+    udata=uin[0].data[0,:,:]
+else:
+    udata=uin[0].data
+
+>>>>>>> bfab1cee915774ee0026ff6e68d072827b950814
 
 polint=np.sqrt(qdata**2+udata**2)
 

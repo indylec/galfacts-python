@@ -4,7 +4,11 @@ import theil_sen_uncertain as ts
 #matplotlib.use('MacOSX')
 import matplotlib.pylab as plt
 from astropy.io import fits
+<<<<<<< HEAD
 from astropy.io.fits import Column
+=======
+from fits import Column
+>>>>>>> bfab1cee915774ee0026ff6e68d072827b950814
 import sys
 from numpy import pi
 
@@ -19,8 +23,13 @@ no_divs=int(sys.argv[4])
 
 #get the sizes of both maps, make sure dimensions match
 
+<<<<<<< HEAD
 if gal.shape[1] != wol.shape[0] or gal.shape[2] != wol.shape[1]:
     sys.exit("Error: Both maps must have the same x and y dimensions")
+=======
+if gal.shape[1] != wol.shape[1] or gal.shape[2] =! wol.shape[2]:
+    sys.exit("Both maps must have the same x and y dimensions")
+>>>>>>> bfab1cee915774ee0026ff6e68d072827b950814
 
 #trim the size of the maps to be a multiple of 16 either side
 y_subdim=gal.shape[1]/no_divs
@@ -32,6 +41,7 @@ y_crop=gal.shape[1]%no_divs
 #Make sure we lop off the right number of pixels
 if x_crop % 2:
     gal=gal[:,:,x_crop/2+1:-x_crop/2]
+<<<<<<< HEAD
     wol=wol[:,x_crop/2+1:-x_crop/2]
 else:
     gal=gal[:,:,x_crop/2:-x_crop/2]
@@ -44,6 +54,20 @@ if y_crop % 2:
 else:
     gal=gal[:,y_crop/2:-y_crop/2,:]
     wol=wol[y_crop/2:-y_crop/2,:]
+=======
+    wol=wol[:,:,x_crop/2+1:-x_crop/2]
+else:
+    gal=gal[:,:,x_crop/2:-x_crop/2]
+    wol=wol[:,:,x_crop/2:-x_crop/2]
+    
+if y_crop % 2:
+    gal=gal[:,y_crop/2+1:-y_crop/2,:]
+    wol=wol[:,y_crop/2+1:-y_crop/2,:]
+    
+else:
+    gal=gal[:,y_crop/2:-y_crop/2,:]
+    wol=wol[:,y_crop/2:-y_crop/2,:]
+>>>>>>> bfab1cee915774ee0026ff6e68d072827b950814
 
 
 #create output products
@@ -71,7 +95,11 @@ for i in range(gal.shape[0]):
         tab_y[i*no_divs**2+j]=jy
 
         #prepare data for tt-plot
+<<<<<<< HEAD
         gal_temp=np.ravel(gal[i,jy*y_subdim:(jy+1)*y_subdim,jx*x_subdim:(jx+1)*x_subdim])
+=======
+        gal_temp=np.ravel(gal[jy*y_subdim:(jy+1)*y_subdim,jx*x_subdim:(jx+1)*x_subdim])
+>>>>>>> bfab1cee915774ee0026ff6e68d072827b950814
         wol_temp=np.ravel(wol[jy*y_subdim:(jy+1)*y_subdim,jx*x_subdim:(jx+1)*x_subdim])
 
         good=np.arange(np.shape(gal_temp)[0])
@@ -82,9 +110,13 @@ for i in range(gal.shape[0]):
         good_both=np.intersect1d(good_gal,good_wol)
 
         #calculate t-t plot, find offset, store in empty cube, store other parameters in table
+<<<<<<< HEAD
         print "processing channel",i
         print "x,y",jx,jy
         print "region",i*no_divs**2+j,"out of",gal.shape[0]*no_divs**2
+=======
+
+>>>>>>> bfab1cee915774ee0026ff6e68d072827b950814
         params=ts.theil_sen(wol_temp[good_both],gal_temp[good_both])
 
         offset_temp=params[1]
@@ -106,7 +138,11 @@ c4=Column(name='offset',format='E',unit='K',array=tab_offset)
 c5=Column(name='err_lo',format='E',unit='K',array=tab_err_lo)
 c6=Column(name='err_hi',format='E',unit='K',array=tab_err_hi)
 
+<<<<<<< HEAD
 imhdu=fits.PrimaryHDU(out_cube)
+=======
+imhdu=fits.PrimaryHDU(cube_out)
+>>>>>>> bfab1cee915774ee0026ff6e68d072827b950814
 tabhdu=fits.BinTableHDU.from_columns([c1,c2,c3,c4,c5,c6])
 
 out_hdulist=fits.HDUList([imhdu,tabhdu])
