@@ -50,7 +50,9 @@ width_deg=width/60.
 # first step is to get images and import header and data into numpy arrays
 map_hdu=fits.open(map_in) 
 map_im=map_hdu[0].data
-map_im=map_im[0,:,:]
+if len(map_im.shape)==3:
+    map_im=map_im[0,:,:]
+    
 map_head=map_hdu[0].header
 
 xw=map_head['NAXIS1']
@@ -169,4 +171,4 @@ for i in range (nochunks):
     ax.set_yscale('log')
 
 
-    fig.savefig("/Users/leclercq/galfacts/aps/plots/v3.1/"+field+"_aps_stripes_dqa3.2_c"+str(i)+".pdf",dpi=100)
+    fig.savefig("/Users/leclercq/galfacts/aps/plots/v4/"+field+"_aps_sources_dqa3.2_c"+str(i)+".pdf",dpi=100)
