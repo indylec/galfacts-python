@@ -1,4 +1,4 @@
-#!/opt/exp_soft/python-2.7.3/bin/python
+##!/opt/exp_soft/python-2.7.3/bin/python
 
 import numpy as np
 from numpy import pi
@@ -57,14 +57,17 @@ pp=qcube+1j*ucube #slow but does the job - creates polarized intensity cube
 
 pout=np.empty((nbin,sy,sx),dtype=complex)
 
+lamsqmean=np.mean(lamsq)
 lamsqb=lamsq.reshape(sz,1,1)
+
+
 
 
 #SYNTHESIZE
 
 for irm in range(nbin):
     print 'Making RM = {0}'.format(rm[irm])
-    rot= -2.*rm[irm]*lamsqb
+    rot= -2.*rm[irm]*(lamsqb-lamsqmean)
     rr=np.cos(rot)
     ri=np.sin(rot)
     rot=np.tile(rr,(sy,sx))+1j*np.tile(ri,(sy,sx))
