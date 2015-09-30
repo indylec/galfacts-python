@@ -21,20 +21,21 @@ class Params:
         self.qfile = ''
         self.ufile = ''
         self.outfile = ''
+        self.outdir = ''
         self.l2 = None
         self.l20 = 0.
         self.weights = None
         self.nphi = 100
         self.dphi = 10
         self.phi_min = -500
-        temp = numpy.arange(self.nphi)
+        temp = np.arange(self.nphi)
         self.phi = self.phi_min + temp * self.dphi
         self.phi_max=0.
         self.phi_scale=0.
         self.fwhm=0.
         self.field = ''
 
-def get_l2_params(file):
+def get_l2_params(params):
     """
     get_l2(header, weights=None)
 
@@ -64,7 +65,7 @@ def get_l2_params(file):
     """
     c2=299792458.**2
 
-    header=fits.getheader(file)
+    header=fits.getheader(params.qfile)
     
     dnu=header['CDELT3']
     nchan=header['NAXIS3']
@@ -77,11 +78,11 @@ def get_l2_params(file):
     l2 = 0.5 * c2 * ((nu - 0.5 * dnu) ** -2 + (nu + 0.5 * dnu) ** -2)
     l2 = np.flipud(l2)
         
-    if weights != None:
-        if header['NAXIS3']!= weights.shape[0]:
+    if params.weights != None:
+        if header['NAXIS3']!= params.weights.shape[0]:
             raise Exception ('Weights and freq.axis have different sizes')
         else:
-            l20 = np.sum(weights*l2)/np.sum(weights)
+            l20 = np.sum(params.weights*l2)/np.sum(params.weights)
     else:
         l20 = np.sum(l2)/nchan
 
@@ -131,9 +132,9 @@ def compute_fpsf(l2, l20, phi, weights=None):
     print "Making FPSF..."   
 
     for i in range(phi.shape[0]):
-        fpsf[i] = np.sum(weights*np.exp(-2.*j*phi[i]*(l2-l20))/np.sum(weights)
+        fpsf[i] = np.sum(weights*np.exp(-2.*1j*phi[i]*(l2-l20)))/np.sum(weights)
 
-    fwhm_fpsf= 2.* np.sqrt(3)/(np.amax(l2)-np.amin(l2))
+    fwhm_fpsf = 2.0*np.sqrt(3)/(np.amax(l2)-np.amin(l2))
 
     print "...done."
 
@@ -193,7 +194,7 @@ def make_di_cube(qcube, ucube, phi, l2, l20, weights = None):
             temp_los=qcube[:,j,i]+1j*ucube[:,j,i]
             for p in range(phi.shape[0]):
                 rm_di_cube[p,j,i] = np.sum(temp_los*weights*\
-                                        np.exp(-2.*j*phi[p]*(l2-l20))/np.sum(weights)
+                                        np.exp(-2.*1j*phi[p]*(l2-l20)))/np.sum(weights)
     print "...done."    
     
     return rm_di_cube
@@ -213,30 +214,32 @@ def new_header(params):
     header['CDELT3']=(params.dphi,'phi step')
     header['OBJECT']= 'GALFACTS '+params.field+' RM cube'
     header.add_comment('Made with rmsyn-di.py')
-    header.add_comment('on '+date)
+    header.add_comment('on '+str(date))
 
-    header.add_comment('FWHM of FPSF: {0:f4.2} rad/m^2'.format(params.fwhm))
-    header.add_comment('Largest phi-scale: {0:f4.2} rad/m^2'.format(params.phi_scale))
+    header.add_comment('FWHM of FPSF: {0:10.2f} rad/m^2'.format(params.fwhm))
+    header.add_comment('Largest phi-scale: {0:10.2f} rad/m^2'.format(params.phi_scale))
 
     return header
 
 
-def output_cube_fpsf(cube,fpsf,params)
+def output_cube_fpsf(cube,fpsf,params):
 
     rm_header=new_header(params)
 
-    print "Writing RM cube to"+params.outfile+".fits "
-    
-    fits.writeto(params.outfile+".fits",cube,rm_header)
+    print "Output is in "+params.outdir
 
-    print "Writing FPSF to"+params.outfile+".txt"
+    print "Writing RM cube to "+params.outfile+".fits "
+    
+    fits.writeto(params.outdir+params.outfile+".fits",np.abs(cube),rm_header)
+
+    print "Writing FPSF to "+params.outfile+".txt"
 
     fpsf_out=np.zeros((params.nphi,3))
     fpsf_out[:,0]=params.phi
     fpsf_out[:,1]=fpsf.real
     fpsf_out[:,2]=fpsf.imag
 
-    np.savetxt(params.outfile+".txt", fpsf_out)
+    np.savetxt(params_outdir+params.outfile+".txt", fpsf_out)
 
 
 
@@ -245,21 +248,25 @@ def params_from_args():
     parser.add_argument("q_in",help="Name of Q fits file")
     parser.add_argument("u_in",help="Name of U fits file")
     parser.add_argument("outfile",help="Output file prefix")
+    parser.add_argument("outdir",help="Output directory")
     parser.add_argument("field",help="GALFACTS Field")
     parser.add_argument("-w","--weights",dest="weights_in",help="Optional weight file")
-    parser.add_argument("-p", "--phi",dest="phi_in" nargs=3, type=int,help="phi axis parameters: nphi,dphi,phi_min")
+    parser.add_argument("-p", "--phi",dest="phi_in", nargs=3, type=int,help="phi axis parameters: nphi,dphi,phi_min")
+
+    args=parser.parse_args()
 
     parameters=Params()
-    parameters.qfile=q_in
-    parameters.ufile=u_in
-    parameters.outfile=outfile
-    parameters.field=field
-    if phi_in != None:
-        parameters.nphi=phi_in[0]
-        parameters.dphi=phi_in[1]
-        parameters.phi_min=phi_in[2]
-    if weights_in != None:
-        parameters.weights=np.loadtxt(weights_in)
+    parameters.qfile=args.q_in
+    parameters.ufile=args.u_in
+    parameters.outfile=args.outfile
+    parameters.outdir=args.outdir
+    parameters.field=args.field
+    if args.phi_in != None:
+        parameters.nphi=args.phi_in[0]
+        parameters.dphi=args.phi_in[1]
+        parameters.phi_min=args.phi_in[2]
+    if args.weights_in != None:
+        parameters.weights=np.loadtxt(args.weights_in).astype(int)
 
     return parameters
 
@@ -274,7 +281,7 @@ def main():
 
     #get l2
     
-    params.l2,params.l20,params.phi_max,params.phi_scale=get_l2_params(params.qfile)
+    params.l2,params.l20,params.phi_max,params.phi_scale=get_l2_params(params)
 
     #get fpsf
     
