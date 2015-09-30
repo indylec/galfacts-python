@@ -34,23 +34,21 @@ class Params:
         self.phi_scale=0.
         self.fwhm=0.
         self.field = ''
+        self.range = None
+        self.nohead = False
+        
 
 def get_l2_params(params):
     """
-    get_l2(header, weights=None)
+    get_l2(params)
 
     Gets the frequency axis from FITS cube header and returns the corresponding
     lambda-squared axis
 
     Inputs:
-        file - one of the data cubes being used for the rm synthesis 
+        params
 
-        weights - (optional) array containing the weights of the different frequency
-        channels. Weights must be between 0 and 1, and the array must be of the same
-        length as the frequency axis. If this is omitted, all values are assumed to
-        have  weight 1.
-
-    Outputs:
+    Outputs: none but saves the following in params:
         
         l2 - numpy array containing the frequencies converted to wavelength-squared
 
@@ -76,26 +74,27 @@ def get_l2_params(params):
     nu = np.arange(nchan)*dnu+nuref
 
     l2 = 0.5 * c2 * ((nu - 0.5 * dnu) ** -2 + (nu + 0.5 * dnu) ** -2)
-    l2 = np.flipud(l2)
+    params.l2 = np.flipud(l2)
         
     if params.weights != None:
-        if header['NAXIS3']!= params.weights.shape[0]:
+        if nchan != params.weights.shape[0]:
             raise Exception ('Weights and freq.axis have different sizes')
         else:
-            l20 = np.sum(params.weights*l2)/np.sum(params.weights)
+            params.l20 = np.sum(params.weights*params.l2)/np.sum(params.weights)
     else:
-        l20 = np.sum(l2)/nchan
+        params.weights=np.ones(nchan)
+        params.l20 = np.sum(params.l2)/nchan
 
-    phi_max = np.sqrt(3.)/dl2
+    params.phi_max = np.sqrt(3.)/dl2
     
-    phi_scale = np.pi/np.amin(l2)
+    params.phi_scale = np.pi/np.amin(params.l2)
 
-    return l2, l20, phi_max, phi_scale
+    #return l2, l20, phi_max, phi_scale
 
             
-def compute_fpsf(l2, l20, phi, weights=None):
+def compute_fpsf(params):
     """
-    compute_fpsf(l2, phi, weights=None)
+    compute_fpsf(params)
 
     Computes the Faraday Point Spread Function for a given lambda-squared distribution
     and phi axis. Also returns resolution parameters specifying the width, FWHM and
@@ -103,15 +102,7 @@ def compute_fpsf(l2, l20, phi, weights=None):
     specified.
 
     input:
-        l2 - numpy array containing the lambda-squared values
-
-        l20 - weighted mean of the lambda-squared values 
-
-        phi - numpy array containing the faraday depth (phi) values
-
-        weights - (optional) numpy array containing the weights of each lambda-squared
-        value. The weights mus be between 0 and 1. If this is omitted, all values are
-        assumed to have weight 1.
+        params
 
     output:
         fpsf - complex numpy array containing the FPSF, binned according to the
@@ -121,28 +112,27 @@ def compute_fpsf(l2, l20, phi, weights=None):
         resolution in Faraday depth space. Computed from B&dB 2005.
         
     """
-    fpsf=np.empty(phi.shape[0],dtype=complex)
+    fpsf=np.empty(params.phi.shape[0],dtype=complex)
     
-    if weights == None:
-        weights = np.ones(l2.shape[0])
-    else:
-        if weights.shape[0] != l2.shape[0]:
-            raise Exception ('weights array must have same length as lambda-squared\
-                array')
+    
+    
+    #if params.weights.shape[0] != params.l2.shape[0]:
+    #        raise Exception ('weights array must have same length as lambda-squared\
+    #            array')
     print "Making FPSF..."   
 
-    for i in range(phi.shape[0]):
-        fpsf[i] = np.sum(weights*np.exp(-2.*1j*phi[i]*(l2-l20)))/np.sum(weights)
+    for i in range(params.phi.shape[0]):
+        fpsf[i] = np.sum(params.weights*np.exp(-2.*1j*params.phi[i]*(params.l2-params.l20)))/np.sum(params.weights)
 
-    fwhm_fpsf = 2.0*np.sqrt(3)/(np.amax(l2)-np.amin(l2))
+    params.fwhm = 2.0*np.sqrt(3)/(np.amax(params.l2)-np.amin(params.l2))
 
     print "...done."
 
-    return fpsf, fwhm_fpsf
+    return fpsf
         
         
 
-def make_di_cube(qcube, ucube, phi, l2, l20, weights = None):
+def make_di_cube(qcube, ucube, params):
     """
     make_di_cube(qcube, ucube, phi, l2, l20)
 
@@ -171,19 +161,20 @@ def make_di_cube(qcube, ucube, phi, l2, l20, weights = None):
         polarisation as a function of faraday depth.
         
     """
-    if weights == None:
-        weights = np.ones(l2.shape[0])
-    else:
-        if weights.shape[0] != l2.shape[0]:
-            raise Exception ('weights array must have same length as lambda-squared\
-                array')
+    #if params.weights == None:
+    #    params.weights = np.ones(params.l2.shape[0])
+    #else:
+    #    if params.weights.shape[0] != params.l2.shape[0]:
+    #        raise Exception ('weights array must have same length as lambda-squared\
+    #            array')
+    
     
     if qcube.shape != ucube.shape:
         raise Exception('qcube and ucube have different dimensions! Not allowed.')
 
     s=qcube.shape
 
-    rm_di_cube=np.empty((phi.shape[0],s[1],s[2]),dtype=complex)
+    rm_di_cube=np.empty((params.phi.shape[0],s[1],s[2]),dtype=complex)
 
     temp_los=np.empty((s[0]), dtype=complex)
 
@@ -192,12 +183,43 @@ def make_di_cube(qcube, ucube, phi, l2, l20, weights = None):
         for j in range(s[1]):
             print 'Synthesising pixel {0},{1}'.format(i,j)
             temp_los=qcube[:,j,i]+1j*ucube[:,j,i]
-            for p in range(phi.shape[0]):
-                rm_di_cube[p,j,i] = np.sum(temp_los*weights*\
-                                        np.exp(-2.*1j*phi[p]*(l2-l20)))/np.sum(weights)
+            #check for nans in the los
+            nans=np.where(np.isnan(temp_los))
+            #set these to zero in the los and set corresponding weights to 0
+            temp_los[nans]=0.0
+            temp_weights=params.weights
+            temp_weights[nans]=0.0
+            
+            #############debugging stuff#################
+            #print temp_los
+            #print "argument",-2.*1j*params.phi[0]*(params.l2-params.l20)
+            #print "exponential",np.exp(-2.*1j*params.phi[0]*(params.l2-params.l20))
+            #print "weight sum",np.sum(temp_weights)
+            
+            #print "exp times weights and los",temp_los*temp_weights*np.exp(-2.*1j*params.phi[0]*(params.l2-params.l20))
+            
+            #print np.sum(temp_los*temp_weights*np.exp(-2.*1j*params.phi[0]*(params.l2-params.l20)))/np.sum(temp_weights)
+            #############################################
+            for p in range(params.phi.shape[0]):
+                rm_di_cube[p,j,i] = np.sum(temp_los*temp_weights*\
+                                        np.exp(-2.*1j*params.phi[p]*(params.l2-params.l20)))/np.sum(temp_weights)
+            #print rm_di_cube[0,j,i],rm_di_cube[50,j,i]
     print "...done."    
     
     return rm_di_cube
+
+
+def open_and_trim(params):
+
+    q=fits.getdata(params.qfile)
+    u=fits.getdata(params.ufile)
+
+    if params.range != None:
+        q=q[:,params.range[2]:params.range[3],params.range[0]:params.range[1]]
+        u=u[:,params.range[2]:params.range[3],params.range[0]:params.range[1]]
+
+    #print np.sum(q),np.sum(u)
+    return q,u
 
 def new_header(params):
 
@@ -212,7 +234,27 @@ def new_header(params):
     header['CRPIX3']=(1,'reference pixel')
     header['CRVAL3']=(params.phi_min,'reference value')
     header['CDELT3']=(params.dphi,'phi step')
+
     header['OBJECT']= 'GALFACTS '+params.field+' RM cube'
+
+    cpix_ra = (params.range[1] - params.range[0]) / 2. + 1.
+    cpix_dec = (params.range[3] - params.range[2]) / 2. + 1.
+
+    cpix_ra_old = old_header['CRPIX1'] - params.range[0]
+    cpix_dec_old = old_header['CRPIX2'] - params.range[2]
+
+    crval_ra = old_header['CRVAL1'] + (cpix_ra - cpix_ra_old) * old_header['CDELT1']
+    crval_dec = old_header['CRVAL2'] + (cpix_dec - cpix_dec_old) * old_header['CDELT2']
+
+    header['CRPIX1'] = cpix_ra
+    header['CRVAL1'] = crval_ra
+    header['NAXIS1'] = params.range[1]-params.range[0]
+
+    header['CRPIX2'] = cpix_dec
+    header['CRVAL2'] = crval_dec
+    header['NAXIS2'] = params.range[3]-params.range[2]
+
+    
     header.add_comment('Made with rmsyn-di.py')
     header.add_comment('on '+str(date))
 
@@ -224,14 +266,17 @@ def new_header(params):
 
 def output_cube_fpsf(cube,fpsf,params):
 
-    rm_header=new_header(params)
-
     print "Output is in "+params.outdir
 
     print "Writing RM cube to "+params.outfile+".fits "
     
-    fits.writeto(params.outdir+params.outfile+".fits",np.abs(cube),rm_header)
+    if params.nohead:
+        fits.writeto(params.outdir+params.outfile+".fits",np.abs(cube))
+    else:
+        rm_header=new_header(params)
+        fits.writeto(params.outdir+params.outfile+".fits",np.abs(cube), rm_header)
 
+        
     print "Writing FPSF to "+params.outfile+".txt"
 
     fpsf_out=np.zeros((params.nphi,3))
@@ -252,6 +297,8 @@ def params_from_args():
     parser.add_argument("field",help="GALFACTS Field")
     parser.add_argument("-w","--weights",dest="weights_in",help="Optional weight file")
     parser.add_argument("-p", "--phi",dest="phi_in", nargs=3, type=int,help="phi axis parameters: nphi,dphi,phi_min")
+    parser.add_argument("-r", "--range", dest="xyrange", nargs=4, type=int, help="x and y pixel range: xmin, xmax, ymin, ymax")
+    parser.add_argument("-n","--nohead",help="output dirty cube without header", action="store_true")
 
     args=parser.parse_args()
 
@@ -266,7 +313,11 @@ def params_from_args():
         parameters.dphi=args.phi_in[1]
         parameters.phi_min=args.phi_in[2]
     if args.weights_in != None:
-        parameters.weights=np.loadtxt(args.weights_in).astype(int)
+        parameters.weights=np.loadtxt(args.weights_in)
+    if args.xyrange != None:
+        parameters.range=np.asarray(args.xyrange)
+    if args.nohead != None:
+        parameters.nohead = args.nohead
 
     return parameters
 
@@ -276,21 +327,23 @@ def main():
 
     #open fits files, get headers
 
-    q=fits.getdata(params.qfile)
-    u=fits.getdata(params.ufile)
+    q,u = open_and_trim(params)
 
     #get l2
     
-    params.l2,params.l20,params.phi_max,params.phi_scale=get_l2_params(params)
+    #params.l2,params.l20,params.phi_max,params.phi_scale=get_l2_params(params)
+    get_l2_params(params)
 
     #get fpsf
     
-    fpsf,params.fwhm=compute_fpsf(params.l2,params.l20,params.phi,params.weights)
+    #fpsf,params.fwhm=compute_fpsf(params.l2,params.l20,params.phi,params.weights)
+    fpsf=compute_fpsf(params)
 
     #get dirty cube
     
-    rm_cube=make_di_cube(q,u,params.phi,params.l2,params.l20,params.weights)
-
+    #rm_cube=make_di_cube(q,u,params.phi,params.l2,params.l20,params.weights)
+    rm_cube=make_di_cube(q,u,params)
+    
     #write out dirty cube, fpsf
 
     output_cube_fpsf(rm_cube,fpsf,params)
