@@ -239,7 +239,7 @@ def output_cube_fpsf(cube,fpsf,params):
     fpsf_out[:,1]=fpsf.real
     fpsf_out[:,2]=fpsf.imag
 
-    np.savetxt(params_outdir+params.outfile+".txt", fpsf_out)
+    np.savetxt(params.outdir+params.outfile+".txt", fpsf_out)
 
 
 
