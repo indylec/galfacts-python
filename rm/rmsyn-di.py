@@ -5,6 +5,7 @@ import datetime
 import argparse
 from astropy.io import ascii
 from astropy.io import fits
+import rmsyn_dicube as di
 
 class Params:
     """
@@ -28,7 +29,7 @@ class Params:
         self.nphi = 100
         self.dphi = 10
         self.phi_min = -500
-        temp = np.arange(self.nphi)
+        temp = np.arange(self.nphi, dtype=int)
         self.phi = self.phi_min + temp * self.dphi
         self.phi_max=0.
         self.phi_scale=0.
@@ -38,7 +39,7 @@ class Params:
         self.nohead = False
         
 
-def get_l2_params(params):
+def get_l2_params(params,qcube,ucube):
     """
     get_l2(params)
 
@@ -85,11 +86,24 @@ def get_l2_params(params):
         params.weights=np.ones(nchan)
         params.l20 = np.sum(params.l2)/nchan
 
+    #check for channels with nans in them an set their weight to 0
+
+    nonzeroq=np.asarray(np.nonzero(np.isnan(qcube)))
+    bad_q=np.unique(nonzeroq[0])
+
+    nonzerou=np.asarray(np.nonzero(np.isnan(ucube)))
+    bad_u=np.unique(nonzerou[0])
+
+    params.weights[bad_q]=0.
+    params.weights[bad_u]=0.
+
+    #compute resolution parameters
+
     params.phi_max = np.sqrt(3.)/dl2
     
     params.phi_scale = np.pi/np.amin(params.l2)
 
-    #return l2, l20, phi_max, phi_scale
+    
 
             
 def compute_fpsf(params):
@@ -132,81 +146,81 @@ def compute_fpsf(params):
         
         
 
-def make_di_cube(qcube, ucube, params):
-    """
-    make_di_cube(qcube, ucube, phi, l2, l20)
+## def make_di_cube(qcube, ucube, params):
+##     """
+##     make_di_cube(qcube, ucube, phi, l2, l20)
 
-    Creates a 'dirty' RM cube using slow discrete Fourier transform of the complex
-    polarisation.
+##     Creates a 'dirty' RM cube using slow discrete Fourier transform of the complex
+##     polarisation.
 
-    input:
-        qcube - 3D numpy array (RA, dec, frequency) of Stokes Q intensity. Must have
-        same dimensions as Stokes U cube.
+##     input:
+##         qcube - 3D numpy array (RA, dec, frequency) of Stokes Q intensity. Must have
+##         same dimensions as Stokes U cube.
 
-        ucube - 3D numpy array (RA, dec, frequency) of Stokes U intensity. Must have
-        same dimensions as Stokes Q cube.
+##         ucube - 3D numpy array (RA, dec, frequency) of Stokes U intensity. Must have
+##         same dimensions as Stokes Q cube.
 
-        phi - numpy array of faraday depth bins
+##         phi - numpy array of faraday depth bins
 
-        l2 - numpy array containing wavelength squared axis of data cubes
+##         l2 - numpy array containing wavelength squared axis of data cubes
 
-        l20 - weighted average of lambda-squared
+##         l20 - weighted average of lambda-squared
 
-        weights - (optional) numpy array containing the weights of each lambda-squared
-        value. The weights mus be between 0 and 1. If this is omitted, all values are
-        assumed to have weight 1.
+##         weights - (optional) numpy array containing the weights of each lambda-squared
+##         value. The weights mus be between 0 and 1. If this is omitted, all values are
+##         assumed to have weight 1.
 
-    output:
-        rm_di_cube - 3D complex numpy array (RA, dec, phi) containing complex
-        polarisation as a function of faraday depth.
+##     output:
+##         rm_di_cube - 3D complex numpy array (RA, dec, phi) containing complex
+##         polarisation as a function of faraday depth.
         
-    """
-    #if params.weights == None:
-    #    params.weights = np.ones(params.l2.shape[0])
-    #else:
-    #    if params.weights.shape[0] != params.l2.shape[0]:
-    #        raise Exception ('weights array must have same length as lambda-squared\
-    #            array')
+##     """
+##     #if params.weights == None:
+##     #    params.weights = np.ones(params.l2.shape[0])
+##     #else:
+##     #    if params.weights.shape[0] != params.l2.shape[0]:
+##     #        raise Exception ('weights array must have same length as lambda-squared\
+##     #            array')
     
     
-    if qcube.shape != ucube.shape:
-        raise Exception('qcube and ucube have different dimensions! Not allowed.')
+##     if qcube.shape != ucube.shape:
+##         raise Exception('qcube and ucube have different dimensions! Not allowed.')
 
-    s=qcube.shape
+##     s=qcube.shape
 
-    rm_di_cube=np.empty((params.phi.shape[0],s[1],s[2]),dtype=complex)
+##     rm_di_cube=np.empty((params.phi.shape[0],s[1],s[2]),dtype=complex)
 
-    temp_los=np.empty((s[0]), dtype=complex)
+##     temp_los=np.empty((s[0]), dtype=complex)
 
-    print "Making RM cube..."
-    for i in range(s[2]):
-        for j in range(s[1]):
-            print 'Synthesising pixel {0},{1}'.format(i,j)
-            temp_los=qcube[:,j,i]+1j*ucube[:,j,i]
-            #check for nans in the los
-            nans=np.where(np.isnan(temp_los))
-            #set these to zero in the los and set corresponding weights to 0
-            temp_los[nans]=0.0
-            temp_weights=params.weights
-            temp_weights[nans]=0.0
+##     print "Making RM cube..."
+##     for i in range(s[2]):
+##         for j in range(s[1]):
+##             print 'Synthesising pixel {0},{1}'.format(i,j)
+##             temp_los=qcube[:,j,i]+1j*ucube[:,j,i]
+##             #check for nans in the los
+##             nans=np.where(np.isnan(temp_los))
+##             #set these to zero in the los and set corresponding weights to 0
+##             temp_los[nans]=0.0
+##             temp_weights=params.weights
+##             temp_weights[nans]=0.0
             
-            #############debugging stuff#################
-            #print temp_los
-            #print "argument",-2.*1j*params.phi[0]*(params.l2-params.l20)
-            #print "exponential",np.exp(-2.*1j*params.phi[0]*(params.l2-params.l20))
-            #print "weight sum",np.sum(temp_weights)
+##             #############debugging stuff#################
+##             #print temp_los
+##             #print "argument",-2.*1j*params.phi[0]*(params.l2-params.l20)
+##             #print "exponential",np.exp(-2.*1j*params.phi[0]*(params.l2-params.l20))
+##             #print "weight sum",np.sum(temp_weights)
             
-            #print "exp times weights and los",temp_los*temp_weights*np.exp(-2.*1j*params.phi[0]*(params.l2-params.l20))
+##             #print "exp times weights and los",temp_los*temp_weights*np.exp(-2.*1j*params.phi[0]*(params.l2-params.l20))
             
-            #print np.sum(temp_los*temp_weights*np.exp(-2.*1j*params.phi[0]*(params.l2-params.l20)))/np.sum(temp_weights)
-            #############################################
-            for p in range(params.phi.shape[0]):
-                rm_di_cube[p,j,i] = np.sum(temp_los*temp_weights*\
-                                        np.exp(-2.*1j*params.phi[p]*(params.l2-params.l20)))/np.sum(temp_weights)
-            #print rm_di_cube[0,j,i],rm_di_cube[50,j,i]
-    print "...done."    
+##             #print np.sum(temp_los*temp_weights*np.exp(-2.*1j*params.phi[0]*(params.l2-params.l20)))/np.sum(temp_weights)
+##             #############################################
+##             for p in range(params.phi.shape[0]):
+##                 rm_di_cube[p,j,i] = np.sum(temp_los*temp_weights*\
+##                                         np.exp(-2.*1j*params.phi[p]*(params.l2-params.l20)))/np.sum(temp_weights)
+##             #print rm_di_cube[0,j,i],rm_di_cube[50,j,i]
+##     print "...done."    
     
-    return rm_di_cube
+##     return rm_di_cube
 
 
 def open_and_trim(params):
@@ -219,7 +233,7 @@ def open_and_trim(params):
         u=u[:,params.range[2]:params.range[3],params.range[0]:params.range[1]]
 
     #print np.sum(q),np.sum(u)
-    return q,u
+    return np.float64(q),np.float64(u)
 
 def new_header(params):
 
@@ -332,7 +346,7 @@ def main():
     #get l2
     
     #params.l2,params.l20,params.phi_max,params.phi_scale=get_l2_params(params)
-    get_l2_params(params)
+    get_l2_params(params,q,u)
 
     #get fpsf
     
@@ -342,7 +356,8 @@ def main():
     #get dirty cube
     
     #rm_cube=make_di_cube(q,u,params.phi,params.l2,params.l20,params.weights)
-    rm_cube=make_di_cube(q,u,params)
+    #rm_cube=make_di_cube(q,u,params)
+    rm_cube=di.compute_dicube(q,u,params.phi,params.l2,params.weights,params.l20)
     
     #write out dirty cube, fpsf
 
