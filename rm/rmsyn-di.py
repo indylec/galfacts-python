@@ -6,6 +6,7 @@ import argparse
 from astropy.io import ascii
 from astropy.io import fits
 import rmsyn_dicube as di
+import bottleneck as bn
 
 class Params:
     """
@@ -39,7 +40,7 @@ class Params:
         self.nohead = False
         
 
-def get_l2_params(params,qcube,ucube):
+def get_l2_params(params):
     """
     get_l2(params)
 
@@ -62,6 +63,8 @@ def get_l2_params(params,qcube,ucube):
         
         
     """
+    print "Computing l2, l20 and weights..."
+    
     c2=299792458.**2
 
     header=fits.getheader(params.qfile)
@@ -70,7 +73,7 @@ def get_l2_params(params,qcube,ucube):
     nchan=header['NAXIS3']
     nuref=header['CRVAL3']
 
-    dl2 = c2/dnu**2
+    dl2 = c2/(dnu**2)
 
     nu = np.arange(nchan)*dnu+nuref
 
@@ -86,16 +89,19 @@ def get_l2_params(params,qcube,ucube):
         params.weights=np.ones(nchan)
         params.l20 = np.sum(params.l2)/nchan
 
-    #check for channels with nans in them an set their weight to 0
+    #Replace nans with 0.0
 
-    nonzeroq=np.asarray(np.nonzero(np.isnan(qcube)))
-    bad_q=np.unique(nonzeroq[0])
+    #print "Checking for bad channels..."
+    #nonzeroq=np.asarray(np.nonzero(np.isnan(qcube)))
+    #bad_q=np.unique(nonzeroq[0])
+    #print "...Q done..."
 
-    nonzerou=np.asarray(np.nonzero(np.isnan(ucube)))
-    bad_u=np.unique(nonzerou[0])
+    #nonzerou=np.asarray(np.nonzero(np.isnan(ucube)))
+    #bad_u=np.unique(nonzerou[0])
+    #print "...U done."
 
-    params.weights[bad_q]=0.
-    params.weights[bad_u]=0.
+    
+    
 
     #compute resolution parameters
 
@@ -103,7 +109,10 @@ def get_l2_params(params,qcube,ucube):
     
     params.phi_scale = np.pi/np.amin(params.l2)
 
-    
+    print "phi_max is ",params.phi_max
+    print "phi_scale is ",params.phi_scale
+
+    print "...done."
 
             
 def compute_fpsf(params):
@@ -225,15 +234,35 @@ def compute_fpsf(params):
 
 def open_and_trim(params):
 
+    print "Opening q and u cubes..."
     q=fits.getdata(params.qfile)
+    print "... Q done ..."
     u=fits.getdata(params.ufile)
+    print "... U done!"
+
+    print "Getting rid of NaNs..."
+
+    bn.replace(q,np.nan,0.0)
+
+    print"...Q done..."
+
+    bn.replace(u,np.nan,0.0)
+
+    print "...U done!"
 
     if params.range != None:
         q=q[:,params.range[2]:params.range[3],params.range[0]:params.range[1]]
         u=u[:,params.range[2]:params.range[3],params.range[0]:params.range[1]]
+        
+    else:
+        params.range=np.empty(4)
+        params.range[0]=0
+        params.range[1]=q.shape[2]-1
+        params.range[2]=0
+        params.range[3]=q.shape[1]-1
 
     #print np.sum(q),np.sum(u)
-    return np.float64(q),np.float64(u)
+    return q.newbyteorder(),u.newbyteorder()
 
 def new_header(params):
 
@@ -303,6 +332,7 @@ def output_cube_fpsf(cube,fpsf,params):
 
 
 def params_from_args():
+    print 'Reading in parameters...'
     parser = argparse.ArgumentParser()
     parser.add_argument("q_in",help="Name of Q fits file")
     parser.add_argument("u_in",help="Name of U fits file")
@@ -333,6 +363,8 @@ def params_from_args():
     if args.nohead != None:
         parameters.nohead = args.nohead
 
+    print "...done."
+
     return parameters
 
 def main():
@@ -346,7 +378,7 @@ def main():
     #get l2
     
     #params.l2,params.l20,params.phi_max,params.phi_scale=get_l2_params(params)
-    get_l2_params(params,q,u)
+    get_l2_params(params)
 
     #get fpsf
     
