@@ -262,7 +262,9 @@ def open_and_trim(params):
         params.range[3]=q.shape[1]-1
 
     #print np.sum(q),np.sum(u)
+
     return q.newbyteorder(),u.newbyteorder()
+
 
 def new_header(params):
 
