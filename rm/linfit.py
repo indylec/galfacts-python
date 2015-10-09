@@ -107,7 +107,7 @@ def linfit(y, x=None, y_unc=None):
 
   rab = covab / (sa * sb)                  # NR Eq. 15.2.22
   
-  #covar = np.array([[sa**2, covab],
+  covar = np.array([[sa**2, covab],
                     #[covab, sb**2]])
   
   yfit = a + b * x

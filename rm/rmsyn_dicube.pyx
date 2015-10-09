@@ -73,7 +73,7 @@ def compute_dicube(np.ndarray[DTYPEf_t, ndim=3] qcube, np.ndarray[DTYPEf_t, ndim
     
     print 'Making complex polarisation cube...'
     for K in range(chan):
-        print 'channel',K
+        #print 'channel',K
         for J in range(dec):
             #print 'dec',J
             for I in range(ra):
@@ -81,34 +81,34 @@ def compute_dicube(np.ndarray[DTYPEf_t, ndim=3] qcube, np.ndarray[DTYPEf_t, ndim
                 qcubekji=qcube[K,J,I]
                 ucubekji=ucube[K,J,I]
                 polcube[K,J,I]=qcubekji+ucubekji*1j
+                #print K,J,I, qcubekji,ucubekji,polcube[K,J,I]
     print '...done.'
 
-    print 'Starting RM synthesis...'
+    print 'Performing RM synthesis...'
+
+    #print ra,dec
     
     for j in range(dec):
-        print 'Working on ra pixel',i
+        #print 'Working on dec row',j
         for i in range(ra):
-            print 'Working on pixel',i,j
+            #print 'Working on pixel',i,j
             temp_los=polcube[:,j,i]
             for p in range(phi.shape[0]):
                 for k in range(chan):
                     losk=temp_los[k]
                     weightk=weight[k]
-
+                    #print p,i,j,k,losk,weightk
                     weighted_p[k]=weightk*losk
-                    #weighted_p[k]=temp_los[k]*weight[k]
-
                     temp_l2[k]=l2[k]-l20
                     expk_1=-2.*phi[p]*temp_l2[k]
                     expk_2=1j
 
                     expk=expk_1*expk_2
                     temp_exp[k]=cexp(expk)
-		    
-		    
-
                     sum_term[k]=weighted_p[k]*temp_exp[k]
-            dicube[p,j,i]=inverse_sum_weight*cython_csum(sum_term)
+	
+                dicube[p,j,i]=inverse_sum_weight*cython_csum(sum_term)
+            	#print p, dicube[p,j,i]
 
     print '...done.'
 

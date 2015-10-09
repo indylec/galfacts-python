@@ -4,3 +4,5 @@ rm/rmsyn_dicube.so
 rm/build/temp.macosx-10.5-x86_64-2.7/rmsyn_dicube.o
 
 rm/rmsyn_dicube.c
+
+rm/rmsyn_dicube.c

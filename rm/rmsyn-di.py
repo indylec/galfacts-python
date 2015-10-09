@@ -242,12 +242,11 @@ def open_and_trim(params):
 
     print "Getting rid of NaNs..."
 
-    bn.replace(q,np.nan,0.0)
+    q[np.isnan(q)]=0.0
 
     print"...Q done..."
 
-    bn.replace(u,np.nan,0.0)
-
+    u[np.isnan(u)]=0.0
     print "...U done!"
 
     if params.range != None:
@@ -261,10 +260,11 @@ def open_and_trim(params):
         params.range[2]=0
         params.range[3]=q.shape[1]-1
 
-    #print np.sum(q),np.sum(u)
+    print np.sum(q),np.sum(u)
 
-    return q.newbyteorder(),u.newbyteorder()
-
+    print q.shape, u.shape
+    #return q.byteswap().newbyteorder(),u.byteswap().newbyteorder()
+    return q.astype('float64'),u.astype('float64')
 
 def new_header(params):
 
@@ -376,6 +376,8 @@ def main():
     #open fits files, get headers
 
     q,u = open_and_trim(params)
+
+    #print q
 
     #get l2
     
