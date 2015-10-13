@@ -6,7 +6,7 @@ import argparse
 from astropy.io import ascii
 from astropy.io import fits
 import rmsyn_dicube as di
-import bottleneck as bn
+#import bottleneck as bn
 
 class Params:
     """
@@ -38,6 +38,8 @@ class Params:
         self.field = ''
         self.range = None
         self.nohead = False
+        self.nochunks=1
+        self.chunkrange=None
         
 
 def get_l2_params(params):
@@ -151,6 +153,15 @@ def compute_fpsf(params):
 
     print "...done."
 
+    print "Writing FPSF to "+params.outfile+".txt"
+
+    fpsf_out=np.zeros((params.nphi,3))
+    fpsf_out[:,0]=params.phi
+    fpsf_out[:,1]=fpsf.real
+    fpsf_out[:,2]=fpsf.imag
+
+    np.savetxt(params.outdir+params.outfile+".txt", fpsf_out)
+
     return fpsf
         
         
@@ -232,7 +243,7 @@ def compute_fpsf(params):
 ##     return rm_di_cube
 
 
-def open_and_trim(params):
+def open_and_trim(params,i):
 
     print "Opening q and u cubes..."
     q=fits.getdata(params.qfile)
@@ -240,15 +251,7 @@ def open_and_trim(params):
     u=fits.getdata(params.ufile)
     print "... U done!"
 
-    print "Getting rid of NaNs..."
-
-    q[np.isnan(q)]=0.0
-
-    print"...Q done..."
-
-    u[np.isnan(u)]=0.0
-    print "...U done!"
-
+    
     if params.range != None:
         q=q[:,params.range[2]:params.range[3],params.range[0]:params.range[1]]
         u=u[:,params.range[2]:params.range[3],params.range[0]:params.range[1]]
@@ -260,9 +263,41 @@ def open_and_trim(params):
         params.range[2]=0
         params.range[3]=q.shape[1]-1
 
-    print np.sum(q),np.sum(u)
+    chunksize=q.shape[2]/params.nochunks
+    chunk_remain=q.shape[2]%params.nochunks
 
-    print q.shape, u.shape
+    if chunk_remain == 0:
+        q=q[:,:,i*chunksize:(i+1)*chunksize]
+        u=u[:,:,i*chunksize:(i+1)*chunksize]
+
+    elif i <=chunk_remain:
+        q=q[:,:,i*(chunksize+1):(i+1)*(chunksize+1)]
+        u=u[:,:,i*(chunksize+1):(i+1)*(chunksize+1)]
+
+    elif i>chunk_remain:
+        q=q[:,:,i*chunksize+chunk_remain:(i+1)*chunksize+chunk_remain]
+        u=u[:,:,i*chunksize+chunk_remain:(i+1)*chunksize+chunk_remain]
+
+    print "Getting rid of NaNs..."
+
+    q[np.isnan(q)]=0.0
+
+    print"...Q done..."
+
+    u[np.isnan(u)]=0.0
+    print "...U done!"
+
+    params.chunkrange=np.empty(4)
+    params.chunkrange[0]=0
+    params.chunkrange[1]=q.shape[2]-1
+    params.chunkrange[2]=0
+    params.chunkrange[3]=q.shape[1]-1
+        
+        
+
+    #print np.sum(q),np.sum(u)
+
+    #print q.shape, u.shape
     #return q.byteswap().newbyteorder(),u.byteswap().newbyteorder()
     return q.astype('float64'),u.astype('float64')
 
@@ -282,22 +317,22 @@ def new_header(params):
 
     header['OBJECT']= 'GALFACTS '+params.field+' RM cube'
 
-    cpix_ra = (params.range[1] - params.range[0]) / 2. + 1.
-    cpix_dec = (params.range[3] - params.range[2]) / 2. + 1.
+    cpix_ra = (params.chunkrange[1] - params.chunkrange[0]) / 2. + 1.
+    cpix_dec = (params.chunkrange[3] - params.chunkrange[2]) / 2. + 1.
 
-    cpix_ra_old = old_header['CRPIX1'] - params.range[0]
-    cpix_dec_old = old_header['CRPIX2'] - params.range[2]
+    cpix_ra_old = old_header['CRPIX1'] - params.chunkrange[0]
+    cpix_dec_old = old_header['CRPIX2'] - params.chunkrange[2]
 
     crval_ra = old_header['CRVAL1'] + (cpix_ra - cpix_ra_old) * old_header['CDELT1']
     crval_dec = old_header['CRVAL2'] + (cpix_dec - cpix_dec_old) * old_header['CDELT2']
 
     header['CRPIX1'] = cpix_ra
     header['CRVAL1'] = crval_ra
-    header['NAXIS1'] = params.range[1]-params.range[0]
+    header['NAXIS1'] = params.chunkrange[1]-params.chunkrange[0]
 
     header['CRPIX2'] = cpix_dec
     header['CRVAL2'] = crval_dec
-    header['NAXIS2'] = params.range[3]-params.range[2]
+    header['NAXIS2'] = params.chunkrange[3]-params.chunkrange[2]
 
     
     header.add_comment('Made with rmsyn-di.py')
@@ -309,27 +344,20 @@ def new_header(params):
     return header
 
 
-def output_cube_fpsf(cube,fpsf,params):
+def output_cube(cube,params,chunkno):
 
     print "Output is in "+params.outdir
 
-    print "Writing RM cube to "+params.outfile+".fits "
+    print "Writing RM cube to "+params.outfile+"_"+str(chunkno)+".fits "
     
     if params.nohead:
-        fits.writeto(params.outdir+params.outfile+".fits",np.abs(cube))
+        fits.writeto(params.outdir+params.outfile+"_"+str(chunkno)+".fits",np.abs(cube))
     else:
         rm_header=new_header(params)
-        fits.writeto(params.outdir+params.outfile+".fits",np.abs(cube), rm_header)
+        fits.writeto(params.outdir+params.outfile+"_"+str(chunkno)+".fits",np.abs(cube), rm_header)
 
         
-    print "Writing FPSF to "+params.outfile+".txt"
-
-    fpsf_out=np.zeros((params.nphi,3))
-    fpsf_out[:,0]=params.phi
-    fpsf_out[:,1]=fpsf.real
-    fpsf_out[:,2]=fpsf.imag
-
-    np.savetxt(params.outdir+params.outfile+".txt", fpsf_out)
+    
 
 
 
@@ -345,6 +373,7 @@ def params_from_args():
     parser.add_argument("-p", "--phi",dest="phi_in", nargs=3, type=int,help="phi axis parameters: nphi,dphi,phi_min")
     parser.add_argument("-r", "--range", dest="xyrange", nargs=4, type=int, help="x and y pixel range: xmin, xmax, ymin, ymax")
     parser.add_argument("-n","--nohead",help="output dirty cube without header", action="store_true")
+    parser.add_argument("-c","--chunks",type=int ,help="Number of chunks to split the field into for memory purposes. These will be written out as separate fits files.")
 
     args=parser.parse_args()
 
@@ -354,16 +383,18 @@ def params_from_args():
     parameters.outfile=args.outfile
     parameters.outdir=args.outdir
     parameters.field=args.field
-    if args.phi_in != None:
+    if args.phi_in:
         parameters.nphi=args.phi_in[0]
         parameters.dphi=args.phi_in[1]
         parameters.phi_min=args.phi_in[2]
-    if args.weights_in != None:
+    if args.weights_in:
         parameters.weights=np.loadtxt(args.weights_in)
-    if args.xyrange != None:
+    if args.xyrange:
         parameters.range=np.asarray(args.xyrange)
-    if args.nohead != None:
+    if args.nohead:
         parameters.nohead = args.nohead
+    if args.chunks:
+        parameters.nochunks=args.chunks
 
     print "...done."
 
@@ -375,29 +406,32 @@ def main():
 
     #open fits files, get headers
 
-    q,u = open_and_trim(params)
-
-    #print q
-
-    #get l2
-    
-    #params.l2,params.l20,params.phi_max,params.phi_scale=get_l2_params(params)
     get_l2_params(params)
 
-    #get fpsf
-    
-    #fpsf,params.fwhm=compute_fpsf(params.l2,params.l20,params.phi,params.weights)
     fpsf=compute_fpsf(params)
 
-    #get dirty cube
+    print "Splitting field into {0} chunks.".format(params.nochunks)
+
+    for i in range(params.nochunks):
+        
+        print "Working on chunk {0}".format(i)
+
+        q,u = open_and_trim(params,i)
+
+        rm_cube=di.compute_dicube(q,u,params.phi,params.l2,params.weights,params.l20)
+        output_cube(rm_cube,params,i)
+
     
-    #rm_cube=make_di_cube(q,u,params.phi,params.l2,params.l20,params.weights)
-    #rm_cube=make_di_cube(q,u,params)
-    rm_cube=di.compute_dicube(q,u,params.phi,params.l2,params.weights,params.l20)
+    
+
+    
+    
+
+    
     
     #write out dirty cube, fpsf
 
-    output_cube_fpsf(rm_cube,fpsf,params)
+    
     
     
 if __name__ == "__main__":

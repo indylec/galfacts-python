@@ -59,10 +59,7 @@ def compute_dicube(np.ndarray[DTYPEf_t, ndim=3] qcube, np.ndarray[DTYPEf_t, ndim
     cdef int chan = qcube.shape[0]
     cdef double complex losk,expk,expk_2 #,weightedpk
     cdef float weightk,expk_1,qcubekji,ucubekji
-    cdef np.ndarray[DTYPEc_t,ndim=3] polcube = np.empty([qcube.shape[0],qcube.shape[1],qcube.shape[2]],dtype=DTYPEc)
-
-    cdef np.ndarray[DTYPEc_t,ndim=3] dicube = np.empty([phi.shape[0],qcube.shape[1],qcube.shape[2]],dtype=DTYPEc)
-
+    
     cdef np.ndarray[DTYPEc_t,ndim=1] temp_los = np.empty([qcube.shape[0]],dtype=DTYPEc)
     cdef np.ndarray[DTYPEc_t,ndim=1] weighted_p = np.empty([qcube.shape[0]],dtype=DTYPEc)
     cdef np.ndarray[DTYPEc_t,ndim=1] temp_exp = np.empty([qcube.shape[0]],dtype=DTYPEc)
@@ -70,6 +67,8 @@ def compute_dicube(np.ndarray[DTYPEf_t, ndim=3] qcube, np.ndarray[DTYPEf_t, ndim
 
     cdef np.ndarray[DTYPEc_t,ndim=1] sum_term = np.empty([qcube.shape[0]],dtype=DTYPEc)   
     cdef float inverse_sum_weight = 1./cython_fsum(weight)
+
+    cdef np.ndarray[DTYPEc_t,ndim=3] polcube = np.empty([qcube.shape[0],qcube.shape[1],qcube.shape[2]],dtype=DTYPEc)
     
     print 'Making complex polarisation cube...'
     for K in range(chan):
@@ -87,6 +86,8 @@ def compute_dicube(np.ndarray[DTYPEf_t, ndim=3] qcube, np.ndarray[DTYPEf_t, ndim
     print 'Performing RM synthesis...'
 
     #print ra,dec
+
+   cdef np.ndarray[DTYPEc_t,ndim=3] dicube = np.empty([phi.shape[0],qcube.shape[1],qcube.shape[2]],dtype=DTYPEc)
     
     for j in range(dec):
         #print 'Working on dec row',j

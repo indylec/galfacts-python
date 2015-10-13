@@ -1233,7 +1233,6 @@ static char __pyx_k_expk_2[] = "expk_2";
 static char __pyx_k_import[] = "__import__";
 static char __pyx_k_weight[] = "weight";
 static char __pyx_k_xrange[] = "xrange";
-static char __pyx_k_channel[] = "channel";
 static char __pyx_k_float32[] = "float32";
 static char __pyx_k_polcube[] = "polcube";
 static char __pyx_k_temp_l2[] = "temp_l2";
@@ -1250,10 +1249,8 @@ static char __pyx_k_weighted_p[] = "weighted_p";
 static char __pyx_k_RuntimeError[] = "RuntimeError";
 static char __pyx_k_rmsyn_dicube[] = "rmsyn_dicube";
 static char __pyx_k_compute_dicube[] = "compute_dicube";
-static char __pyx_k_Working_on_pixel[] = "Working on pixel";
 static char __pyx_k_inverse_sum_weight[] = "inverse_sum_weight";
-static char __pyx_k_Working_on_ra_pixel[] = "Working on ra pixel";
-static char __pyx_k_Starting_RM_synthesis[] = "Starting RM synthesis...";
+static char __pyx_k_Performing_RM_synthesis[] = "Performing RM synthesis...";
 static char __pyx_k_ndarray_is_not_C_contiguous[] = "ndarray is not C contiguous";
 static char __pyx_k_local_scratch_leclercq_repos_ga[] = "/local/scratch/leclercq/repos/galfacts-python/rm/rmsyn_dicube.pyx";
 static char __pyx_k_unknown_dtype_code_in_numpy_pxd[] = "unknown dtype code in numpy.pxd (%d)";
@@ -1273,13 +1270,10 @@ static PyObject *__pyx_n_s_J;
 static PyObject *__pyx_n_s_K;
 static PyObject *__pyx_kp_s_Making_complex_polarisation_cube;
 static PyObject *__pyx_kp_u_Non_native_byte_order_not_suppor;
+static PyObject *__pyx_kp_s_Performing_RM_synthesis;
 static PyObject *__pyx_n_s_RuntimeError;
-static PyObject *__pyx_kp_s_Starting_RM_synthesis;
 static PyObject *__pyx_n_s_ValueError;
-static PyObject *__pyx_kp_s_Working_on_pixel;
-static PyObject *__pyx_kp_s_Working_on_ra_pixel;
 static PyObject *__pyx_n_s_chan;
-static PyObject *__pyx_n_s_channel;
 static PyObject *__pyx_n_s_complex128;
 static PyObject *__pyx_n_s_compute_dicube;
 static PyObject *__pyx_n_s_dec;
@@ -2318,7 +2312,7 @@ static PyObject *__pyx_pf_12rmsyn_dicube_compute_dicube(CYTHON_UNUSED PyObject *
  * 
  *     print 'Making complex polarisation cube...'             # <<<<<<<<<<<<<<
  *     for K in range(chan):
- *         print 'channel',K
+ *         #print 'channel',K
  */
   if (__Pyx_PrintOne(0, __pyx_kp_s_Making_complex_polarisation_cube) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 74; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
 
@@ -2326,36 +2320,16 @@ static PyObject *__pyx_pf_12rmsyn_dicube_compute_dicube(CYTHON_UNUSED PyObject *
  * 
  *     print 'Making complex polarisation cube...'
  *     for K in range(chan):             # <<<<<<<<<<<<<<
- *         print 'channel',K
+ *         #print 'channel',K
  *         for J in range(dec):
  */
   __pyx_t_14 = __pyx_v_chan;
   for (__pyx_t_15 = 0; __pyx_t_15 < __pyx_t_14; __pyx_t_15+=1) {
     __pyx_v_K = __pyx_t_15;
 
-    /* "rmsyn_dicube.pyx":76
- *     print 'Making complex polarisation cube...'
- *     for K in range(chan):
- *         print 'channel',K             # <<<<<<<<<<<<<<
- *         for J in range(dec):
- *             #print 'dec',J
- */
-    __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_K); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 76; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_5 = PyTuple_New(2); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 76; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    __Pyx_GOTREF(__pyx_t_5);
-    __Pyx_INCREF(__pyx_n_s_channel);
-    __Pyx_GIVEREF(__pyx_n_s_channel);
-    PyTuple_SET_ITEM(__pyx_t_5, 0, __pyx_n_s_channel);
-    __Pyx_GIVEREF(__pyx_t_2);
-    PyTuple_SET_ITEM(__pyx_t_5, 1, __pyx_t_2);
-    __pyx_t_2 = 0;
-    if (__Pyx_Print(0, __pyx_t_5, 1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 76; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-
     /* "rmsyn_dicube.pyx":77
  *     for K in range(chan):
- *         print 'channel',K
+ *         #print 'channel',K
  *         for J in range(dec):             # <<<<<<<<<<<<<<
  *             #print 'dec',J
  *             for I in range(ra):
@@ -2392,7 +2366,7 @@ static PyObject *__pyx_pf_12rmsyn_dicube_compute_dicube(CYTHON_UNUSED PyObject *
  *                 qcubekji=qcube[K,J,I]
  *                 ucubekji=ucube[K,J,I]             # <<<<<<<<<<<<<<
  *                 polcube[K,J,I]=qcubekji+ucubekji*1j
- *     print '...done.'
+ *                 #print K,J,I, qcubekji,ucubekji,polcube[K,J,I]
  */
         __pyx_t_23 = __pyx_v_K;
         __pyx_t_24 = __pyx_v_J;
@@ -2403,8 +2377,8 @@ static PyObject *__pyx_pf_12rmsyn_dicube_compute_dicube(CYTHON_UNUSED PyObject *
  *                 qcubekji=qcube[K,J,I]
  *                 ucubekji=ucube[K,J,I]
  *                 polcube[K,J,I]=qcubekji+ucubekji*1j             # <<<<<<<<<<<<<<
+ *                 #print K,J,I, qcubekji,ucubekji,polcube[K,J,I]
  *     print '...done.'
- * 
  */
         __pyx_t_26 = __pyx_v_K;
         __pyx_t_27 = __pyx_v_J;
@@ -2414,117 +2388,72 @@ static PyObject *__pyx_pf_12rmsyn_dicube_compute_dicube(CYTHON_UNUSED PyObject *
     }
   }
 
-  /* "rmsyn_dicube.pyx":84
- *                 ucubekji=ucube[K,J,I]
+  /* "rmsyn_dicube.pyx":85
  *                 polcube[K,J,I]=qcubekji+ucubekji*1j
+ *                 #print K,J,I, qcubekji,ucubekji,polcube[K,J,I]
  *     print '...done.'             # <<<<<<<<<<<<<<
  * 
- *     print 'Starting RM synthesis...'
+ *     print 'Performing RM synthesis...'
  */
-  if (__Pyx_PrintOne(0, __pyx_kp_s_done) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 84; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (__Pyx_PrintOne(0, __pyx_kp_s_done) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 85; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
 
-  /* "rmsyn_dicube.pyx":86
+  /* "rmsyn_dicube.pyx":87
  *     print '...done.'
  * 
- *     print 'Starting RM synthesis...'             # <<<<<<<<<<<<<<
+ *     print 'Performing RM synthesis...'             # <<<<<<<<<<<<<<
  * 
- *     for j in range(dec):
+ *     #print ra,dec
  */
-  if (__Pyx_PrintOne(0, __pyx_kp_s_Starting_RM_synthesis) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 86; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (__Pyx_PrintOne(0, __pyx_kp_s_Performing_RM_synthesis) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 87; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
 
-  /* "rmsyn_dicube.pyx":88
- *     print 'Starting RM synthesis...'
+  /* "rmsyn_dicube.pyx":91
+ *     #print ra,dec
  * 
  *     for j in range(dec):             # <<<<<<<<<<<<<<
- *         print 'Working on ra pixel',i
+ *         #print 'Working on dec row',j
  *         for i in range(ra):
  */
   __pyx_t_14 = __pyx_v_dec;
   for (__pyx_t_15 = 0; __pyx_t_15 < __pyx_t_14; __pyx_t_15+=1) {
     __pyx_v_j = __pyx_t_15;
 
-    /* "rmsyn_dicube.pyx":89
- * 
+    /* "rmsyn_dicube.pyx":93
  *     for j in range(dec):
- *         print 'Working on ra pixel',i             # <<<<<<<<<<<<<<
- *         for i in range(ra):
- *             print 'Working on pixel',i,j
- */
-    __pyx_t_5 = __Pyx_PyInt_From_int(__pyx_v_i); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 89; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    __Pyx_GOTREF(__pyx_t_5);
-    __pyx_t_2 = PyTuple_New(2); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 89; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    __Pyx_GOTREF(__pyx_t_2);
-    __Pyx_INCREF(__pyx_kp_s_Working_on_ra_pixel);
-    __Pyx_GIVEREF(__pyx_kp_s_Working_on_ra_pixel);
-    PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_kp_s_Working_on_ra_pixel);
-    __Pyx_GIVEREF(__pyx_t_5);
-    PyTuple_SET_ITEM(__pyx_t_2, 1, __pyx_t_5);
-    __pyx_t_5 = 0;
-    if (__Pyx_Print(0, __pyx_t_2, 1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 89; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-
-    /* "rmsyn_dicube.pyx":90
- *     for j in range(dec):
- *         print 'Working on ra pixel',i
+ *         #print 'Working on dec row',j
  *         for i in range(ra):             # <<<<<<<<<<<<<<
- *             print 'Working on pixel',i,j
+ *             #print 'Working on pixel',i,j
  *             temp_los=polcube[:,j,i]
  */
     __pyx_t_16 = __pyx_v_ra;
     for (__pyx_t_17 = 0; __pyx_t_17 < __pyx_t_16; __pyx_t_17+=1) {
       __pyx_v_i = __pyx_t_17;
 
-      /* "rmsyn_dicube.pyx":91
- *         print 'Working on ra pixel',i
+      /* "rmsyn_dicube.pyx":95
  *         for i in range(ra):
- *             print 'Working on pixel',i,j             # <<<<<<<<<<<<<<
- *             temp_los=polcube[:,j,i]
+ *             #print 'Working on pixel',i,j
+ *             temp_los=polcube[:,j,i]             # <<<<<<<<<<<<<<
  *             for p in range(phi.shape[0]):
+ *                 for k in range(chan):
  */
-      __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_i); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 91; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_j); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 95; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_2);
-      __pyx_t_5 = __Pyx_PyInt_From_int(__pyx_v_j); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 91; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_5 = __Pyx_PyInt_From_int(__pyx_v_i); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 95; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_5);
-      __pyx_t_4 = PyTuple_New(3); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 91; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_4 = PyTuple_New(3); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 95; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_4);
-      __Pyx_INCREF(__pyx_kp_s_Working_on_pixel);
-      __Pyx_GIVEREF(__pyx_kp_s_Working_on_pixel);
-      PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_kp_s_Working_on_pixel);
+      __Pyx_INCREF(__pyx_slice_);
+      __Pyx_GIVEREF(__pyx_slice_);
+      PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_slice_);
       __Pyx_GIVEREF(__pyx_t_2);
       PyTuple_SET_ITEM(__pyx_t_4, 1, __pyx_t_2);
       __Pyx_GIVEREF(__pyx_t_5);
       PyTuple_SET_ITEM(__pyx_t_4, 2, __pyx_t_5);
       __pyx_t_2 = 0;
       __pyx_t_5 = 0;
-      if (__Pyx_Print(0, __pyx_t_4, 1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 91; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_5 = PyObject_GetItem(((PyObject *)__pyx_v_polcube), __pyx_t_4); if (unlikely(__pyx_t_5 == NULL)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 95; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+      __Pyx_GOTREF(__pyx_t_5);
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-
-      /* "rmsyn_dicube.pyx":92
- *         for i in range(ra):
- *             print 'Working on pixel',i,j
- *             temp_los=polcube[:,j,i]             # <<<<<<<<<<<<<<
- *             for p in range(phi.shape[0]):
- *                 for k in range(chan):
- */
-      __pyx_t_4 = __Pyx_PyInt_From_int(__pyx_v_j); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 92; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-      __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_5 = __Pyx_PyInt_From_int(__pyx_v_i); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 92; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-      __Pyx_GOTREF(__pyx_t_5);
-      __pyx_t_2 = PyTuple_New(3); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 92; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-      __Pyx_GOTREF(__pyx_t_2);
-      __Pyx_INCREF(__pyx_slice_);
-      __Pyx_GIVEREF(__pyx_slice_);
-      PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_slice_);
-      __Pyx_GIVEREF(__pyx_t_4);
-      PyTuple_SET_ITEM(__pyx_t_2, 1, __pyx_t_4);
-      __Pyx_GIVEREF(__pyx_t_5);
-      PyTuple_SET_ITEM(__pyx_t_2, 2, __pyx_t_5);
-      __pyx_t_4 = 0;
-      __pyx_t_5 = 0;
-      __pyx_t_5 = PyObject_GetItem(((PyObject *)__pyx_v_polcube), __pyx_t_2); if (unlikely(__pyx_t_5 == NULL)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 92; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-      __Pyx_GOTREF(__pyx_t_5);
-      __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-      if (!(likely(((__pyx_t_5) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_5, __pyx_ptype_5numpy_ndarray))))) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 92; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      if (!(likely(((__pyx_t_5) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_5, __pyx_ptype_5numpy_ndarray))))) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 95; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __pyx_t_8 = ((PyArrayObject *)__pyx_t_5);
       {
         __Pyx_BufFmt_StackElem __pyx_stack[1];
@@ -2540,14 +2469,14 @@ static PyObject *__pyx_pf_12rmsyn_dicube_compute_dicube(CYTHON_UNUSED PyObject *
           }
         }
         __pyx_pybuffernd_temp_los.diminfo[0].strides = __pyx_pybuffernd_temp_los.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_temp_los.diminfo[0].shape = __pyx_pybuffernd_temp_los.rcbuffer->pybuffer.shape[0];
-        if (unlikely(__pyx_t_18 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 92; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        if (unlikely(__pyx_t_18 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 95; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       }
       __pyx_t_8 = 0;
       __Pyx_DECREF_SET(__pyx_v_temp_los, ((PyArrayObject *)__pyx_t_5));
       __pyx_t_5 = 0;
 
-      /* "rmsyn_dicube.pyx":93
- *             print 'Working on pixel',i,j
+      /* "rmsyn_dicube.pyx":96
+ *             #print 'Working on pixel',i,j
  *             temp_los=polcube[:,j,i]
  *             for p in range(phi.shape[0]):             # <<<<<<<<<<<<<<
  *                 for k in range(chan):
@@ -2557,7 +2486,7 @@ static PyObject *__pyx_pf_12rmsyn_dicube_compute_dicube(CYTHON_UNUSED PyObject *
       for (__pyx_t_18 = 0; __pyx_t_18 < __pyx_t_32; __pyx_t_18+=1) {
         __pyx_v_p = __pyx_t_18;
 
-        /* "rmsyn_dicube.pyx":94
+        /* "rmsyn_dicube.pyx":97
  *             temp_los=polcube[:,j,i]
  *             for p in range(phi.shape[0]):
  *                 for k in range(chan):             # <<<<<<<<<<<<<<
@@ -2568,39 +2497,39 @@ static PyObject *__pyx_pf_12rmsyn_dicube_compute_dicube(CYTHON_UNUSED PyObject *
         for (__pyx_t_33 = 0; __pyx_t_33 < __pyx_t_19; __pyx_t_33+=1) {
           __pyx_v_k = __pyx_t_33;
 
-          /* "rmsyn_dicube.pyx":95
+          /* "rmsyn_dicube.pyx":98
  *             for p in range(phi.shape[0]):
  *                 for k in range(chan):
  *                     losk=temp_los[k]             # <<<<<<<<<<<<<<
  *                     weightk=weight[k]
- * 
+ *                     #print p,i,j,k,losk,weightk
  */
           __pyx_t_34 = __pyx_v_k;
           __pyx_v_losk = (*__Pyx_BufPtrStrided1d(__pyx_t_double_complex *, __pyx_pybuffernd_temp_los.rcbuffer->pybuffer.buf, __pyx_t_34, __pyx_pybuffernd_temp_los.diminfo[0].strides));
 
-          /* "rmsyn_dicube.pyx":96
+          /* "rmsyn_dicube.pyx":99
  *                 for k in range(chan):
  *                     losk=temp_los[k]
  *                     weightk=weight[k]             # <<<<<<<<<<<<<<
- * 
+ *                     #print p,i,j,k,losk,weightk
  *                     weighted_p[k]=weightk*losk
  */
           __pyx_t_35 = __pyx_v_k;
           __pyx_v_weightk = (*__Pyx_BufPtrStrided1d(__pyx_t_12rmsyn_dicube_DTYPEf_t *, __pyx_pybuffernd_weight.rcbuffer->pybuffer.buf, __pyx_t_35, __pyx_pybuffernd_weight.diminfo[0].strides));
 
-          /* "rmsyn_dicube.pyx":98
+          /* "rmsyn_dicube.pyx":101
  *                     weightk=weight[k]
- * 
+ *                     #print p,i,j,k,losk,weightk
  *                     weighted_p[k]=weightk*losk             # <<<<<<<<<<<<<<
- *                     #weighted_p[k]=temp_los[k]*weight[k]
- * 
+ *                     temp_l2[k]=l2[k]-l20
+ *                     expk_1=-2.*phi[p]*temp_l2[k]
  */
           __pyx_t_36 = __pyx_v_k;
           *__Pyx_BufPtrStrided1d(__pyx_t_double_complex *, __pyx_pybuffernd_weighted_p.rcbuffer->pybuffer.buf, __pyx_t_36, __pyx_pybuffernd_weighted_p.diminfo[0].strides) = __Pyx_c_prod(__pyx_t_double_complex_from_parts(__pyx_v_weightk, 0), __pyx_v_losk);
 
-          /* "rmsyn_dicube.pyx":101
- *                     #weighted_p[k]=temp_los[k]*weight[k]
- * 
+          /* "rmsyn_dicube.pyx":102
+ *                     #print p,i,j,k,losk,weightk
+ *                     weighted_p[k]=weightk*losk
  *                     temp_l2[k]=l2[k]-l20             # <<<<<<<<<<<<<<
  *                     expk_1=-2.*phi[p]*temp_l2[k]
  *                     expk_2=1j
@@ -2609,8 +2538,8 @@ static PyObject *__pyx_pf_12rmsyn_dicube_compute_dicube(CYTHON_UNUSED PyObject *
           __pyx_t_38 = __pyx_v_k;
           *__Pyx_BufPtrStrided1d(__pyx_t_12rmsyn_dicube_DTYPEf_t *, __pyx_pybuffernd_temp_l2.rcbuffer->pybuffer.buf, __pyx_t_38, __pyx_pybuffernd_temp_l2.diminfo[0].strides) = ((*__Pyx_BufPtrStrided1d(__pyx_t_12rmsyn_dicube_DTYPEf_t *, __pyx_pybuffernd_l2.rcbuffer->pybuffer.buf, __pyx_t_37, __pyx_pybuffernd_l2.diminfo[0].strides)) - __pyx_v_l20);
 
-          /* "rmsyn_dicube.pyx":102
- * 
+          /* "rmsyn_dicube.pyx":103
+ *                     weighted_p[k]=weightk*losk
  *                     temp_l2[k]=l2[k]-l20
  *                     expk_1=-2.*phi[p]*temp_l2[k]             # <<<<<<<<<<<<<<
  *                     expk_2=1j
@@ -2620,7 +2549,7 @@ static PyObject *__pyx_pf_12rmsyn_dicube_compute_dicube(CYTHON_UNUSED PyObject *
           __pyx_t_40 = __pyx_v_k;
           __pyx_v_expk_1 = ((-2. * (*__Pyx_BufPtrStrided1d(__pyx_t_12rmsyn_dicube_DTYPEi_t *, __pyx_pybuffernd_phi.rcbuffer->pybuffer.buf, __pyx_t_39, __pyx_pybuffernd_phi.diminfo[0].strides))) * (*__Pyx_BufPtrStrided1d(__pyx_t_12rmsyn_dicube_DTYPEf_t *, __pyx_pybuffernd_temp_l2.rcbuffer->pybuffer.buf, __pyx_t_40, __pyx_pybuffernd_temp_l2.diminfo[0].strides)));
 
-          /* "rmsyn_dicube.pyx":103
+          /* "rmsyn_dicube.pyx":104
  *                     temp_l2[k]=l2[k]-l20
  *                     expk_1=-2.*phi[p]*temp_l2[k]
  *                     expk_2=1j             # <<<<<<<<<<<<<<
@@ -2629,65 +2558,65 @@ static PyObject *__pyx_pf_12rmsyn_dicube_compute_dicube(CYTHON_UNUSED PyObject *
  */
           __pyx_v_expk_2 = __pyx_t_double_complex_from_parts(0, 1.0);
 
-          /* "rmsyn_dicube.pyx":105
+          /* "rmsyn_dicube.pyx":106
  *                     expk_2=1j
  * 
  *                     expk=expk_1*expk_2             # <<<<<<<<<<<<<<
  *                     temp_exp[k]=cexp(expk)
- * 
+ *                     sum_term[k]=weighted_p[k]*temp_exp[k]
  */
           __pyx_v_expk = __Pyx_c_prod(__pyx_t_double_complex_from_parts(__pyx_v_expk_1, 0), __pyx_v_expk_2);
 
-          /* "rmsyn_dicube.pyx":106
+          /* "rmsyn_dicube.pyx":107
  * 
  *                     expk=expk_1*expk_2
  *                     temp_exp[k]=cexp(expk)             # <<<<<<<<<<<<<<
- * 
+ *                     sum_term[k]=weighted_p[k]*temp_exp[k]
  * 
  */
           __pyx_t_41 = __pyx_v_k;
           *__Pyx_BufPtrStrided1d(__pyx_t_double_complex *, __pyx_pybuffernd_temp_exp.rcbuffer->pybuffer.buf, __pyx_t_41, __pyx_pybuffernd_temp_exp.diminfo[0].strides) = cexp(__pyx_v_expk);
 
-          /* "rmsyn_dicube.pyx":110
- * 
- * 
+          /* "rmsyn_dicube.pyx":108
+ *                     expk=expk_1*expk_2
+ *                     temp_exp[k]=cexp(expk)
  *                     sum_term[k]=weighted_p[k]*temp_exp[k]             # <<<<<<<<<<<<<<
- *             dicube[p,j,i]=inverse_sum_weight*cython_csum(sum_term)
  * 
+ *                 dicube[p,j,i]=inverse_sum_weight*cython_csum(sum_term)
  */
           __pyx_t_42 = __pyx_v_k;
           __pyx_t_43 = __pyx_v_k;
           __pyx_t_44 = __pyx_v_k;
           *__Pyx_BufPtrStrided1d(__pyx_t_double_complex *, __pyx_pybuffernd_sum_term.rcbuffer->pybuffer.buf, __pyx_t_44, __pyx_pybuffernd_sum_term.diminfo[0].strides) = __Pyx_c_prod((*__Pyx_BufPtrStrided1d(__pyx_t_double_complex *, __pyx_pybuffernd_weighted_p.rcbuffer->pybuffer.buf, __pyx_t_42, __pyx_pybuffernd_weighted_p.diminfo[0].strides)), (*__Pyx_BufPtrStrided1d(__pyx_t_double_complex *, __pyx_pybuffernd_temp_exp.rcbuffer->pybuffer.buf, __pyx_t_43, __pyx_pybuffernd_temp_exp.diminfo[0].strides)));
         }
-      }
 
-      /* "rmsyn_dicube.pyx":111
- * 
+        /* "rmsyn_dicube.pyx":110
  *                     sum_term[k]=weighted_p[k]*temp_exp[k]
- *             dicube[p,j,i]=inverse_sum_weight*cython_csum(sum_term)             # <<<<<<<<<<<<<<
  * 
- *     print '...done.'
+ *                 dicube[p,j,i]=inverse_sum_weight*cython_csum(sum_term)             # <<<<<<<<<<<<<<
+ *             	#print p, dicube[p,j,i]
+ * 
  */
-      __pyx_t_5 = PyFloat_FromDouble(__pyx_v_inverse_sum_weight); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 111; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-      __Pyx_GOTREF(__pyx_t_5);
-      __pyx_t_2 = __pyx_f_12rmsyn_dicube_cython_csum(((PyArrayObject *)__pyx_v_sum_term)); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 111; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-      __Pyx_GOTREF(__pyx_t_2);
-      __pyx_t_4 = PyNumber_Multiply(__pyx_t_5, __pyx_t_2); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 111; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-      __Pyx_GOTREF(__pyx_t_4);
-      __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-      __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-      __pyx_t_45 = __Pyx_PyComplex_As___pyx_t_double_complex(__pyx_t_4); if (unlikely(PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 111; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-      __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-      __pyx_t_46 = __pyx_v_p;
-      __pyx_t_47 = __pyx_v_j;
-      __pyx_t_48 = __pyx_v_i;
-      *__Pyx_BufPtrStrided3d(__pyx_t_double_complex *, __pyx_pybuffernd_dicube.rcbuffer->pybuffer.buf, __pyx_t_46, __pyx_pybuffernd_dicube.diminfo[0].strides, __pyx_t_47, __pyx_pybuffernd_dicube.diminfo[1].strides, __pyx_t_48, __pyx_pybuffernd_dicube.diminfo[2].strides) = __pyx_t_45;
+        __pyx_t_5 = PyFloat_FromDouble(__pyx_v_inverse_sum_weight); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 110; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __Pyx_GOTREF(__pyx_t_5);
+        __pyx_t_4 = __pyx_f_12rmsyn_dicube_cython_csum(((PyArrayObject *)__pyx_v_sum_term)); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 110; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __Pyx_GOTREF(__pyx_t_4);
+        __pyx_t_2 = PyNumber_Multiply(__pyx_t_5, __pyx_t_4); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 110; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __Pyx_GOTREF(__pyx_t_2);
+        __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+        __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+        __pyx_t_45 = __Pyx_PyComplex_As___pyx_t_double_complex(__pyx_t_2); if (unlikely(PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 110; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+        __pyx_t_46 = __pyx_v_p;
+        __pyx_t_47 = __pyx_v_j;
+        __pyx_t_48 = __pyx_v_i;
+        *__Pyx_BufPtrStrided3d(__pyx_t_double_complex *, __pyx_pybuffernd_dicube.rcbuffer->pybuffer.buf, __pyx_t_46, __pyx_pybuffernd_dicube.diminfo[0].strides, __pyx_t_47, __pyx_pybuffernd_dicube.diminfo[1].strides, __pyx_t_48, __pyx_pybuffernd_dicube.diminfo[2].strides) = __pyx_t_45;
+      }
     }
   }
 
   /* "rmsyn_dicube.pyx":113
- *             dicube[p,j,i]=inverse_sum_weight*cython_csum(sum_term)
+ *             	#print p, dicube[p,j,i]
  * 
  *     print '...done.'             # <<<<<<<<<<<<<<
  * 
@@ -4943,13 +4872,10 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_K, __pyx_k_K, sizeof(__pyx_k_K), 0, 0, 1, 1},
   {&__pyx_kp_s_Making_complex_polarisation_cube, __pyx_k_Making_complex_polarisation_cube, sizeof(__pyx_k_Making_complex_polarisation_cube), 0, 0, 1, 0},
   {&__pyx_kp_u_Non_native_byte_order_not_suppor, __pyx_k_Non_native_byte_order_not_suppor, sizeof(__pyx_k_Non_native_byte_order_not_suppor), 0, 1, 0, 0},
+  {&__pyx_kp_s_Performing_RM_synthesis, __pyx_k_Performing_RM_synthesis, sizeof(__pyx_k_Performing_RM_synthesis), 0, 0, 1, 0},
   {&__pyx_n_s_RuntimeError, __pyx_k_RuntimeError, sizeof(__pyx_k_RuntimeError), 0, 0, 1, 1},
-  {&__pyx_kp_s_Starting_RM_synthesis, __pyx_k_Starting_RM_synthesis, sizeof(__pyx_k_Starting_RM_synthesis), 0, 0, 1, 0},
   {&__pyx_n_s_ValueError, __pyx_k_ValueError, sizeof(__pyx_k_ValueError), 0, 0, 1, 1},
-  {&__pyx_kp_s_Working_on_pixel, __pyx_k_Working_on_pixel, sizeof(__pyx_k_Working_on_pixel), 0, 0, 1, 0},
-  {&__pyx_kp_s_Working_on_ra_pixel, __pyx_k_Working_on_ra_pixel, sizeof(__pyx_k_Working_on_ra_pixel), 0, 0, 1, 0},
   {&__pyx_n_s_chan, __pyx_k_chan, sizeof(__pyx_k_chan), 0, 0, 1, 1},
-  {&__pyx_n_s_channel, __pyx_k_channel, sizeof(__pyx_k_channel), 0, 0, 1, 1},
   {&__pyx_n_s_complex128, __pyx_k_complex128, sizeof(__pyx_k_complex128), 0, 0, 1, 1},
   {&__pyx_n_s_compute_dicube, __pyx_k_compute_dicube, sizeof(__pyx_k_compute_dicube), 0, 0, 1, 1},
   {&__pyx_n_s_dec, __pyx_k_dec, sizeof(__pyx_k_dec), 0, 0, 1, 1},
@@ -5020,14 +4946,14 @@ static int __Pyx_InitCachedConstants(void) {
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__Pyx_InitCachedConstants", 0);
 
-  /* "rmsyn_dicube.pyx":92
+  /* "rmsyn_dicube.pyx":95
  *         for i in range(ra):
- *             print 'Working on pixel',i,j
+ *             #print 'Working on pixel',i,j
  *             temp_los=polcube[:,j,i]             # <<<<<<<<<<<<<<
  *             for p in range(phi.shape[0]):
  *                 for k in range(chan):
  */
-  __pyx_slice_ = PySlice_New(Py_None, Py_None, Py_None); if (unlikely(!__pyx_slice_)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 92; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_slice_ = PySlice_New(Py_None, Py_None, Py_None); if (unlikely(!__pyx_slice_)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 95; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_slice_);
   __Pyx_GIVEREF(__pyx_slice_);
 
