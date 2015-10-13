@@ -34,7 +34,7 @@ def make_angle_cube(np.ndarray[DTYPEf_t, ndim=3] qcube, np.ndarray[DTYPEf_t, ndi
     
 
     for j in range(qcube.shape[1]):
-    	print "Doing dec slice",j
+        print "Doing dec slice",j
         for k in range(qcube.shape[2]):
             cangle[j,k]=0.5*atan2(ucube[cchan,j,k],qcube[cchan,j,k])
             for i in range(qcube.shape[0]):
