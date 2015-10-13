@@ -5,7 +5,6 @@ import datetime
 import argparse
 from astropy.io import ascii
 from astropy.io import fits
-import bottleneck as bn
 import itertools as it
 import cylinfit as cfit
 import angle_cube as ac
@@ -35,9 +34,9 @@ class Params:
         self.nu_size = 0
         self.dnu = 0.
         self.nuref = 0.
-        self.nphi = 0
-        self.dphi = 0
-        self.phi_min = 0
+        self.nphi = 100
+        self.dphi = 10
+        self.phi_min = -500
         temp = np.arange(self.nphi, dtype=int)
         self.phi = self.phi_min + temp * self.dphi
         self.l2 = None
@@ -52,26 +51,25 @@ def fit_rm_peak(params):
     range_no=21
     fit_range=np.arange(range_no)-range_no/2
     rm0=np.empty((params.dec_size,params.ra_size))
+    #print "phi:",params.phi
 
     print "Beginning peak fits..."
     for y,x in it.product(range(params.dec_size),range(params.ra_size)):
-        print "Finding peak for pixel ({0},{1})".format(x,y)
+        #print "Finding peak for pixel ({0},{1})".format(x,y)
         temp_los=rmcube[:,y,x]
-        temp_peak_arg=bn.nanmaxarg(temp_los)
-        if (temp_peak_arg>=range_no/2 and temp_peak_arg<=params.nphi-range_no/2):
+        #print temp_los
+        
+        temp_peak_arg=np.nanargmax(temp_los)
+        #print temp_peak_arg
+        
+        if (temp_peak_arg>=range_no/2 and temp_peak_arg<params.nphi-range_no/2):
             temp_range=fit_range+temp_peak_arg
-            temp_coeffs=np.polyfit(params.phi[range],temp_los[range],2)
-            rm0[y,x]=-temp_coeffs[1]/(2.*temp_coeffs[0])
-        elif temp_peak_arg<range_no/2:
-            temp_range=np.arange(2*temp_peak_arg+1)
+            #print 1,temp_range
             temp_coeffs=np.polyfit(params.phi[temp_range],temp_los[temp_range],2)
             rm0[y,x]=-temp_coeffs[1]/(2.*temp_coeffs[0])
         else:
-            diff=params.nphi-temp_peak_arg
-            temp_range=np.arange(2*diff+1)-diff+temp_peak_arg
-            temp_coeffs=np.polyfit(params.phi[temp_range],temp_los[temp_range],2)
-            rm0[y,x]=-temp_coeffs[1]/(2.*temp_coeffs[0])
-        print "...done."
+            rm0[y,x]=params.phi[np.nanargmax(temp_los)]
+    print "...done."
 
     return rm0
 
@@ -85,22 +83,21 @@ def open_and_trim(params):
 
     print "Getting rid of NaNs..."
 
-    bn.replace(q,np.nan,0.0)
-
+    q[np.isnan(q)]=0.0
     print"...Q done..."
 
-    bn.replace(u,np.nan,0.0)
+    u[np.isnan(u)]=0.0
 
     print "...U done!"
 
-    return q,u
+    return q.astype('float64'),u.astype('float64')
 
-def make_angle_cube(rm_map, params):
+def make_angle(rm_map,params):
 
     qcube,ucube=open_and_trim(params)
 
     print "Making angle cube..."
-    angle=a.make_angle_cube(qcube,ucube,rm_map,params.l2)
+    angle=ac.make_angle_cube(qcube,ucube,rm_map,params.l2)
     print "...done."
 
 ##     cchan=params.nu_size/2
@@ -120,7 +117,7 @@ def make_angle_cube(rm_map, params):
     return angle
 
 
-def get_l2_l0(params):
+def get_l2_l20(params):
     print "Computing l2, l20 and weights..."
     
     c2=299792458.**2
@@ -132,7 +129,7 @@ def get_l2_l0(params):
     l2 = 0.5 * c2 * ((nu - 0.5 * params.dnu) ** -2 + (nu + 0.5 * params.dnu) ** -2)
     params.l2 = np.flipud(l2)
         
-    if params.weights != None:
+    if not params.weights:
         if params.nu_size != params.weights.shape[0]:
             raise Exception ('Weights and freq.axis have different sizes')
         else:
@@ -142,20 +139,20 @@ def get_l2_l0(params):
         params.l20 = np.sum(params.l2)/params.nu_size
     print"...done."
 
-def find_syn_angle(cube,rmmap,params):
+def find_syn_angle(cube,syn_rm,params):
     syn_angle=np.empty((params.dec_size,params.ra_size))
     from scipy import interpolate
     for y,x in it.product(range(params.dec_size),range(params.ra_size)):
-        print "Finding zero-angle for pixel ({0},{1})".format(x,y)
+        #print "Finding zero-angle for pixel ({0},{1})".format(x,y)
         spl=interpolate.UnivariateSpline(params.l2,cube[:,y,x])
-        syn_angle[y,x]=spl(params.l20)-rmmap[y,x]*params.l20
+        syn_angle[y,x]=spl(params.l20)-syn_rm[y,x]*params.l20
 
     return syn_angle
 
 def fit_angle_cube(angle_cube,rm0,params):
 
     print "Fitting angle cube..."
-    rm_map,angle0 = cfit.fit_cube(angle_cube,params.l2)
+    angle0,rm_map = cfit.fit_cube(angle_cube,params.l2)
     print "...done."
 
     print "Getting synthesis zero-angles..."
@@ -189,7 +186,7 @@ def params_from_args():
     parameters.field=args.field
     parameters.rmfile=args.rm_in
 
-    if args.weights_in != None:
+    if args.weights_in:
         parameters.weights=np.loadtxt(args.weights_in)
 
     #if args.synth != None:
@@ -225,9 +222,9 @@ def new_header(params,object):
 
     header.remove('NAXIS3')
     header.remove('CTYPE3')
-    header('CRPIX3')
-    header('CRVAL3')
-    header('CDELT3')
+    header.remove('CRPIX3')
+    header.remove('CRVAL3')
+    header.remove('CDELT3')
 
     header['OBJECT']= 'GALFACTS '+params.field+' '+object
 
@@ -237,29 +234,29 @@ def new_header(params,object):
 
     return header
 
-def output_maps(cube_rm,cube_angle,syn_rm,syn_angle):
+def output_maps(cube_rm,cube_angle,syn_rm,syn_angle,params):
 
     print "Output is in "+params.outdir
 
-    print "Writing Cube-derived RM map to "+params.outfile+"cube_rm.fits "
+    print "Writing Cube-derived RM map to "+params.outfile+"_cube_rm.fits "
         
     cube_rm_header=new_header(params,"cube RM map")
-    fits.writeto(params.outdir+params.outfile+"cube_rm.fits",cube_rm, cube_rm_header)
+    fits.writeto(params.outdir+params.outfile+"_cube_rm.fits",cube_rm, cube_rm_header)
 
-    print "Writing Cube-derived angle map to "+params.outfile+"cube_angle.fits "
+    print "Writing Cube-derived angle map to "+params.outfile+"_cube_angle.fits "
         
     cube_angle_header=new_header(params,"cube angle map")
-    fits.writeto(params.outdir+params.outfile+"cube_angle.fits",cube_angle, cube_angle_header)
+    fits.writeto(params.outdir+params.outfile+"_cube_angle.fits",cube_angle, cube_angle_header)
 
-    print "Writing synthesis-derived RM map to "+params.outfile+"cube_rm.fits "
+    print "Writing synthesis-derived RM map to "+params.outfile+"_syn_rm.fits "
         
     syn_rm_header=new_header(params,"syn RM map")
-    fits.writeto(params.outdir+params.outfile+"syn_rm.fits",np.abs(cube), syn_rm_header)
+    fits.writeto(params.outdir+params.outfile+"_syn_rm.fits",syn_rm, syn_rm_header)
 
-    print "Writing synthesis-derived RM map to "+params.outfile+"cube_rm.fits "
+    print "Writing synthesis-derived angle map to "+params.outfile+"_syn_angle.fits "
         
     syn_angle_header=new_header(params,"syn angle map")
-    fits.writeto(params.outdir+params.outfile+"syn_angle.fits",np.abs(cube), syn_angle_header)
+    fits.writeto(params.outdir+params.outfile+"_syn_angle.fits",syn_angle, syn_angle_header)
 
 
 def main():
@@ -269,11 +266,11 @@ def main():
 
     syn_rm=fit_rm_peak(params)
 
-    angle=make_angle_cube(params)
+    angle=make_angle(syn_rm,params)
 
-    cube_rm,cube_angle,syn_angle = fit_angle_cube(angle,rm0,params)
+    cube_rm,cube_angle,syn_angle = fit_angle_cube(angle,syn_rm,params)
 
-    output_maps(cube_rm,cube_angle,syn_rm,syn_angle)
+    output_maps(cube_rm,cube_angle,syn_rm,syn_angle,params)
 
 
 if __name__ == "__main__":
