@@ -105,14 +105,14 @@ def linfit(y, x=None, y_unc=None):
   sa = np.sqrt(1. / S * (1. - Sx * covab)) # NR Eq. 15.2.19
   sb = np.sqrt(1. / Stt)                   # NR Eq. 15.2.20
 
-  rab = covab / (sa * sb)                  # NR Eq. 15.2.22
+  #rab = covab / (sa * sb)                  # NR Eq. 15.2.22
   
-  covar = np.array([[sa**2, covab],
+  #covar = np.array([[sa**2, covab],
                     #[covab, sb**2]])
   
-  yfit = a + b * x
-  chisq = np.sum( ((y - yfit) / y_unc)**2 )
+  #yfit = a + b * x
+  #chisq = np.sum( ((y - yfit) / y_unc)**2 )
   
   #prob = 1. - special.gammainc( (y.size - 2.) / 2., chisq / 2.)
   
-  return a, b, sa, sb, chisq, #prob, covar, yfit
+  return a, b, sa, sb#, chisq, #prob, covar, yfit

@@ -1727,16 +1727,16 @@ static PyObject *__pyx_pf_10angle_cube_make_angle_cube(CYTHON_UNUSED PyObject *_
  * 
  * 
  *     for j in range(qcube.shape[1]):             # <<<<<<<<<<<<<<
+ *         #print "Doing dec slice",j
  *         for k in range(qcube.shape[2]):
- *             cangle[j,k]=0.5*atan2(ucube[cchan,j,k],qcube[cchan,j,k])
  */
   __pyx_t_10 = (__pyx_v_qcube->dimensions[1]);
   for (__pyx_t_11 = 0; __pyx_t_11 < __pyx_t_10; __pyx_t_11+=1) {
     __pyx_v_j = __pyx_t_11;
 
-    /* "angle_cube.pyx":37
- * 
+    /* "angle_cube.pyx":38
  *     for j in range(qcube.shape[1]):
+ *         #print "Doing dec slice",j
  *         for k in range(qcube.shape[2]):             # <<<<<<<<<<<<<<
  *             cangle[j,k]=0.5*atan2(ucube[cchan,j,k],qcube[cchan,j,k])
  *             for i in range(qcube.shape[0]):
@@ -1745,8 +1745,8 @@ static PyObject *__pyx_pf_10angle_cube_make_angle_cube(CYTHON_UNUSED PyObject *_
     for (__pyx_t_13 = 0; __pyx_t_13 < __pyx_t_12; __pyx_t_13+=1) {
       __pyx_v_k = __pyx_t_13;
 
-      /* "angle_cube.pyx":38
- *     for j in range(qcube.shape[1]):
+      /* "angle_cube.pyx":39
+ *         #print "Doing dec slice",j
  *         for k in range(qcube.shape[2]):
  *             cangle[j,k]=0.5*atan2(ucube[cchan,j,k],qcube[cchan,j,k])             # <<<<<<<<<<<<<<
  *             for i in range(qcube.shape[0]):
@@ -1762,7 +1762,7 @@ static PyObject *__pyx_pf_10angle_cube_make_angle_cube(CYTHON_UNUSED PyObject *_
       __pyx_t_21 = __pyx_v_k;
       *__Pyx_BufPtrStrided2d(__pyx_t_10angle_cube_DTYPEf_t *, __pyx_pybuffernd_cangle.rcbuffer->pybuffer.buf, __pyx_t_20, __pyx_pybuffernd_cangle.diminfo[0].strides, __pyx_t_21, __pyx_pybuffernd_cangle.diminfo[1].strides) = (0.5 * atan2((*__Pyx_BufPtrStrided3d(__pyx_t_10angle_cube_DTYPEf_t *, __pyx_pybuffernd_ucube.rcbuffer->pybuffer.buf, __pyx_t_14, __pyx_pybuffernd_ucube.diminfo[0].strides, __pyx_t_15, __pyx_pybuffernd_ucube.diminfo[1].strides, __pyx_t_16, __pyx_pybuffernd_ucube.diminfo[2].strides)), (*__Pyx_BufPtrStrided3d(__pyx_t_10angle_cube_DTYPEf_t *, __pyx_pybuffernd_qcube.rcbuffer->pybuffer.buf, __pyx_t_17, __pyx_pybuffernd_qcube.diminfo[0].strides, __pyx_t_18, __pyx_pybuffernd_qcube.diminfo[1].strides, __pyx_t_19, __pyx_pybuffernd_qcube.diminfo[2].strides))));
 
-      /* "angle_cube.pyx":39
+      /* "angle_cube.pyx":40
  *         for k in range(qcube.shape[2]):
  *             cangle[j,k]=0.5*atan2(ucube[cchan,j,k],qcube[cchan,j,k])
  *             for i in range(qcube.shape[0]):             # <<<<<<<<<<<<<<
@@ -1773,7 +1773,7 @@ static PyObject *__pyx_pf_10angle_cube_make_angle_cube(CYTHON_UNUSED PyObject *_
       for (__pyx_t_23 = 0; __pyx_t_23 < __pyx_t_22; __pyx_t_23+=1) {
         __pyx_v_i = __pyx_t_23;
 
-        /* "angle_cube.pyx":40
+        /* "angle_cube.pyx":41
  *             cangle[j,k]=0.5*atan2(ucube[cchan,j,k],qcube[cchan,j,k])
  *             for i in range(qcube.shape[0]):
  *                 angle[i,j,k]=0.5*atan2(ucube[i,j,k],qcube[i,j,k])             # <<<<<<<<<<<<<<
@@ -1791,7 +1791,7 @@ static PyObject *__pyx_pf_10angle_cube_make_angle_cube(CYTHON_UNUSED PyObject *_
         __pyx_t_32 = __pyx_v_k;
         *__Pyx_BufPtrStrided3d(__pyx_t_10angle_cube_DTYPEf_t *, __pyx_pybuffernd_angle.rcbuffer->pybuffer.buf, __pyx_t_30, __pyx_pybuffernd_angle.diminfo[0].strides, __pyx_t_31, __pyx_pybuffernd_angle.diminfo[1].strides, __pyx_t_32, __pyx_pybuffernd_angle.diminfo[2].strides) = (0.5 * atan2((*__Pyx_BufPtrStrided3d(__pyx_t_10angle_cube_DTYPEf_t *, __pyx_pybuffernd_ucube.rcbuffer->pybuffer.buf, __pyx_t_24, __pyx_pybuffernd_ucube.diminfo[0].strides, __pyx_t_25, __pyx_pybuffernd_ucube.diminfo[1].strides, __pyx_t_26, __pyx_pybuffernd_ucube.diminfo[2].strides)), (*__Pyx_BufPtrStrided3d(__pyx_t_10angle_cube_DTYPEf_t *, __pyx_pybuffernd_qcube.rcbuffer->pybuffer.buf, __pyx_t_27, __pyx_pybuffernd_qcube.diminfo[0].strides, __pyx_t_28, __pyx_pybuffernd_qcube.diminfo[1].strides, __pyx_t_29, __pyx_pybuffernd_qcube.diminfo[2].strides))));
 
-        /* "angle_cube.pyx":41
+        /* "angle_cube.pyx":42
  *             for i in range(qcube.shape[0]):
  *                 angle[i,j,k]=0.5*atan2(ucube[i,j,k],qcube[i,j,k])
  *                 target[i,j,k]=rmmap[j,k]*(l2[i]-l2[cchan])             # <<<<<<<<<<<<<<
@@ -1807,7 +1807,7 @@ static PyObject *__pyx_pf_10angle_cube_make_angle_cube(CYTHON_UNUSED PyObject *_
         __pyx_t_39 = __pyx_v_k;
         *__Pyx_BufPtrStrided3d(__pyx_t_10angle_cube_DTYPEf_t *, __pyx_pybuffernd_target.rcbuffer->pybuffer.buf, __pyx_t_37, __pyx_pybuffernd_target.diminfo[0].strides, __pyx_t_38, __pyx_pybuffernd_target.diminfo[1].strides, __pyx_t_39, __pyx_pybuffernd_target.diminfo[2].strides) = ((*__Pyx_BufPtrStrided2d(__pyx_t_10angle_cube_DTYPEf_t *, __pyx_pybuffernd_rmmap.rcbuffer->pybuffer.buf, __pyx_t_33, __pyx_pybuffernd_rmmap.diminfo[0].strides, __pyx_t_34, __pyx_pybuffernd_rmmap.diminfo[1].strides)) * ((*__Pyx_BufPtrStrided1d(__pyx_t_10angle_cube_DTYPEf_t *, __pyx_pybuffernd_l2.rcbuffer->pybuffer.buf, __pyx_t_35, __pyx_pybuffernd_l2.diminfo[0].strides)) - (*__Pyx_BufPtrStrided1d(__pyx_t_10angle_cube_DTYPEf_t *, __pyx_pybuffernd_l2.rcbuffer->pybuffer.buf, __pyx_t_36, __pyx_pybuffernd_l2.diminfo[0].strides))));
 
-        /* "angle_cube.pyx":42
+        /* "angle_cube.pyx":43
  *                 angle[i,j,k]=0.5*atan2(ucube[i,j,k],qcube[i,j,k])
  *                 target[i,j,k]=rmmap[j,k]*(l2[i]-l2[cchan])
  *                 target[i,j,k]+=cangle[j,k]             # <<<<<<<<<<<<<<
@@ -1821,7 +1821,7 @@ static PyObject *__pyx_pf_10angle_cube_make_angle_cube(CYTHON_UNUSED PyObject *_
         __pyx_t_44 = __pyx_v_k;
         *__Pyx_BufPtrStrided3d(__pyx_t_10angle_cube_DTYPEf_t *, __pyx_pybuffernd_target.rcbuffer->pybuffer.buf, __pyx_t_42, __pyx_pybuffernd_target.diminfo[0].strides, __pyx_t_43, __pyx_pybuffernd_target.diminfo[1].strides, __pyx_t_44, __pyx_pybuffernd_target.diminfo[2].strides) += (*__Pyx_BufPtrStrided2d(__pyx_t_10angle_cube_DTYPEf_t *, __pyx_pybuffernd_cangle.rcbuffer->pybuffer.buf, __pyx_t_40, __pyx_pybuffernd_cangle.diminfo[0].strides, __pyx_t_41, __pyx_pybuffernd_cangle.diminfo[1].strides));
 
-        /* "angle_cube.pyx":43
+        /* "angle_cube.pyx":44
  *                 target[i,j,k]=rmmap[j,k]*(l2[i]-l2[cchan])
  *                 target[i,j,k]+=cangle[j,k]
  *                 npi[i,j,k]=round((target[i,j,k]-angle[i,j,k])/M_PI)             # <<<<<<<<<<<<<<
@@ -1837,14 +1837,14 @@ static PyObject *__pyx_pf_10angle_cube_make_angle_cube(CYTHON_UNUSED PyObject *_
         __pyx_t_51 = ((*__Pyx_BufPtrStrided3d(__pyx_t_10angle_cube_DTYPEf_t *, __pyx_pybuffernd_target.rcbuffer->pybuffer.buf, __pyx_t_45, __pyx_pybuffernd_target.diminfo[0].strides, __pyx_t_46, __pyx_pybuffernd_target.diminfo[1].strides, __pyx_t_47, __pyx_pybuffernd_target.diminfo[2].strides)) - (*__Pyx_BufPtrStrided3d(__pyx_t_10angle_cube_DTYPEf_t *, __pyx_pybuffernd_angle.rcbuffer->pybuffer.buf, __pyx_t_48, __pyx_pybuffernd_angle.diminfo[0].strides, __pyx_t_49, __pyx_pybuffernd_angle.diminfo[1].strides, __pyx_t_50, __pyx_pybuffernd_angle.diminfo[2].strides)));
         if (unlikely(M_PI == 0)) {
           PyErr_SetString(PyExc_ZeroDivisionError, "float division");
-          {__pyx_filename = __pyx_f[0]; __pyx_lineno = 43; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+          {__pyx_filename = __pyx_f[0]; __pyx_lineno = 44; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
         }
         __pyx_t_52 = __pyx_v_i;
         __pyx_t_53 = __pyx_v_j;
         __pyx_t_54 = __pyx_v_k;
         *__Pyx_BufPtrStrided3d(__pyx_t_10angle_cube_DTYPEf_t *, __pyx_pybuffernd_npi.rcbuffer->pybuffer.buf, __pyx_t_52, __pyx_pybuffernd_npi.diminfo[0].strides, __pyx_t_53, __pyx_pybuffernd_npi.diminfo[1].strides, __pyx_t_54, __pyx_pybuffernd_npi.diminfo[2].strides) = round((__pyx_t_51 / M_PI));
 
-        /* "angle_cube.pyx":44
+        /* "angle_cube.pyx":45
  *                 target[i,j,k]+=cangle[j,k]
  *                 npi[i,j,k]=round((target[i,j,k]-angle[i,j,k])/M_PI)
  *                 angle[i,j,k]+=M_PI*npi[i,j,k]             # <<<<<<<<<<<<<<
@@ -1862,7 +1862,7 @@ static PyObject *__pyx_pf_10angle_cube_make_angle_cube(CYTHON_UNUSED PyObject *_
     }
   }
 
-  /* "angle_cube.pyx":46
+  /* "angle_cube.pyx":47
  *                 angle[i,j,k]+=M_PI*npi[i,j,k]
  * 
  *     return angle             # <<<<<<<<<<<<<<

@@ -16,17 +16,25 @@ cdef cython_fsum(np.ndarray[DTYPEf_t, ndim=1] y):
         x += y[i]
     return x
 
-#this function only calculates regression without uncertainties!
+#linear regression function from Numerical Recipes
+#a is offset, b is slope
 
 @cython.boundscheck(False) # turn off bounds-checking for entire function
 @cython.wraparound(False) # turn off negative indexing for entire function
 
-cdef linfit(np.ndarray[DTYPEf_t, ndim=1] y, np.ndarray[DTYPEf_t, ndim=1] x, ):
+cdef linfit(np.ndarray[DTYPEf_t, ndim=1] y, np.ndarray[DTYPEf_t, ndim=1] x, y_unc = None ):
 
     if y.shape[0] != x.shape[0]:
         raise ValueError('x and y must have the same size!')
 
-    cdef np.ndarray[DTYPEf_t,ndim=1] ryu2 = np.ones([y.shape[0]],dtype=DTYPEf)
+    if not y_unc:
+        y_unc=np.ones([y.shape[0]],dtype=DTYPEf)
+
+    cdef np.ndarray[DTYPEf_t,ndim=1] ryu2 = np.empty([y.shape[0]],dtype=DTYPEf)
+
+    cdef np.ndarray[DTYPEf_t,ndim=1] xs = np.empty([y.shape[0]],dtype=DTYPEf)
+
+    cdef np.ndarray[DTYPEf_t,ndim=1] ys = np.empty([y.shape[0]],dtype=DTYPEf)
 
     cdef np.ndarray[DTYPEf_t,ndim=1] t = np.empty([y.shape[0]],dtype=DTYPEf)
 
@@ -39,20 +47,29 @@ cdef linfit(np.ndarray[DTYPEf_t, ndim=1] y, np.ndarray[DTYPEf_t, ndim=1] x, ):
     cdef int i
     cdef int chan=y.shape[0]
 
+    for i in range(chan):
+        ryu2[i]=1./y_unc[i]**2
+        xs[i]=x[i]*ryu2[i]
+        ys[i]=y[i]*ryu2[i]
+
     S     = cython_fsum(ryu2)
-    Sx    = cython_fsum(x)
-    Sy    = cython_fsum(y)
+    Sx    = cython_fsum(xs)
+    Sy    = cython_fsum(ys)
 
     for i in range(chan):
-        t[i]=(x[i]-Sx/S)
+        t[i]=1./y_unc[i] * (x[i]-Sx/S)
         t2[i]=t[i]**2
-        ty=t[i]*y[i]
+        ty[i]=t[i]*y[i]/y_unc[i]
 	
     Stt = cython_fsum(t2)
     tysum = cython_fsum(ty)    
 
     b = tysum/Stt
-    a = a = (Sy - Sx * b) / S
+    a = (Sy - Sx * b) / S
+
+    covab= -Sx / (S*Stt)
+    sa = np.sqrt(1. / S * (1. - Sx * covab))
+    sb=np.sqrt(1./Stt)
 
     return a, b
 
