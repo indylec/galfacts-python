@@ -10,3 +10,5 @@ rm/rmsyn_dicube.c
 rm/*.c
 
 rm/*.so
+
+*/*.pyc
