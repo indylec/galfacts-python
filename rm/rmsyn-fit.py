@@ -42,6 +42,9 @@ class Params:
         self.l2 = None
         self.l20 = 0.
         self.weights = None
+        self.rms_q = None
+        self.rms_u = None
+
 
 def fit_rm_peak(params):
 
@@ -89,6 +92,22 @@ def open_and_trim(params):
     u[np.isnan(u)]=0.0
 
     print "...U done!"
+
+    print "Calculating RMS noise per channel..."
+    
+    params.q_rms=np.empty(params.nu_size)
+
+    for i in range (params.nu_size):
+        params.q_rms[i]=np.std(q[i,:,:])
+
+    print "Q done!"
+
+     params.u_rms=np.empty(params.nu_size)
+
+    for i in range (params.nu_size):
+        params.u_rms[i]=np.std(u[i,:,:])
+
+    print "U done!"
 
     return q.astype('float64'),u.astype('float64')
 

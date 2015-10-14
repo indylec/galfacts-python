@@ -22,13 +22,10 @@ cdef cython_fsum(np.ndarray[DTYPEf_t, ndim=1] y):
 @cython.boundscheck(False) # turn off bounds-checking for entire function
 @cython.wraparound(False) # turn off negative indexing for entire function
 
-cdef linfit(np.ndarray[DTYPEf_t, ndim=1] y, np.ndarray[DTYPEf_t, ndim=1] x, y_unc = None ):
+cdef linfit(np.ndarray[DTYPEf_t, ndim=1] y, np.ndarray[DTYPEf_t, ndim=1] x,np.ndarray[DTYPEf_t, ndim=1] y_unc):
 
     if y.shape[0] != x.shape[0]:
         raise ValueError('x and y must have the same size!')
-
-    if not y_unc:
-        y_unc=np.ones([y.shape[0]],dtype=DTYPEf)
 
     cdef np.ndarray[DTYPEf_t,ndim=1] ryu2 = np.empty([y.shape[0]],dtype=DTYPEf)
 
