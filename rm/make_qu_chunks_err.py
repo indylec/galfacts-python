@@ -23,6 +23,7 @@ chunk_remain=q.shape[2]%nochunks
 nobins=q.shape[0]/binsize
 bin_remain=q.shape[0]%binsize
 
+
 print "Working on field",field
 
 for i in range(nochunks):
@@ -40,7 +41,7 @@ for i in range(nochunks):
 
 #loop over channel bins
 
-    q_err=np.empty(np.shape(q))
+    temp_q_err=np.empty(np.shape(temp_q))
 
     for bin in range (nobins):
         #print 'working on bin',bin

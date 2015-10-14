@@ -6,6 +6,7 @@ import argparse
 from astropy.io import ascii
 from astropy.io import fits
 import rmsyn_dicube as di
+
 #import bottleneck as bn
 
 class Params:
