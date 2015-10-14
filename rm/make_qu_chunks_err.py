@@ -23,19 +23,19 @@ chunk_remain=q.shape[2]%nochunks
 nobins=q.shape[0]/binsize
 bin_remain=q.shape[0]%binsize
 
-
+print "Working on field",field
 
 for i in range(nochunks):
     print 'Working on chunk',i
     if chunk_remain==0:
-        q=q[:,:,i*chunksize:(i+1)*chunksize]
+        temp_q=q[:,:,i*chunksize:(i+1)*chunksize]
         #u=u[:,:,i*chunksize:(i+1)*chunksize]
     elif  i <=chunk_remain:
-        q=q[:,:,i*(chunksize+1):(i+1)*(chunksize+1)]
+        temp_q=q[:,:,i*(chunksize+1):(i+1)*(chunksize+1)]
         #u=u[:,:,i*(chunksize+1):(i+1)*(chunksize+1)]
 
     elif i>chunk_remain:
-        q=q[:,:,i*chunksize+chunk_remain:(i+1)*chunksize+chunk_remain]
+        temp_q=q[:,:,i*chunksize+chunk_remain:(i+1)*chunksize+chunk_remain]
         #u=u[:,:,i*chunksize+chunk_remain:(i+1)*chunksize+chunk_remain]
 
 #loop over channel bins
@@ -43,22 +43,22 @@ for i in range(nochunks):
     q_err=np.empty(np.shape(q))
 
     for bin in range (nobins):
-        print 'working on bin',bin
+        #print 'working on bin',bin
         if bin_remain == 0:
-            q_err[bin*binsize:(bin+1)*binsize,:,:]=np.std(q[bin*binsize:(bin+1)*binsize,:,:],axis=0,keepdims=True)
+            temp_q_err[bin*binsize:(bin+1)*binsize,:,:]=np.nanstd(temp_q[bin*binsize:(bin+1)*binsize,:,:],axis=0,keepdims=True)
 
         elif bin<=bin_remain:
-            q_err[bin*(binsize+1):(bin+1)*(binsize+1),:,:]=np.std(q[bin*(binsize+1):(bin+1)*(binsize+1),:,:],axis=0,keepdims=True)
+            temp_q_err[bin*(binsize+1):(bin+1)*(binsize+1),:,:]=np.nanstd(temp_q[bin*(binsize+1):(bin+1)*(binsize+1),:,:],axis=0,keepdims=True)
 
         elif bin>bin_remain:
-            q_err[bin*binsize+bin_remain:(bin+1)*binsize+bin_remain,:,:]=np.std(q[bin*binsize+bin_remain:(bin+1)*binsize+bin_remain,:,:],axis=0,keepdims=True)
+            temp_q_err[bin*binsize+bin_remain:(bin+1)*binsize+bin_remain,:,:]=np.nanstd(temp_q[bin*binsize+bin_remain:(bin+1)*binsize+bin_remain,:,:],axis=0,keepdims=True)
             
 
     chunkrange=np.empty(4)
     chunkrange[0]=0
-    chunkrange[1]=q.shape[2]-1
+    chunkrange[1]=temp_q.shape[2]-1
     chunkrange[2]=0
-    chunkrange[3]=q.shape[1]-1
+    chunkrange[3]=temp_q.shape[1]-1
 
     new_header=qhead.copy()
 
@@ -79,8 +79,8 @@ for i in range(nochunks):
     new_header['CRVAL2'] = crval_dec
     new_header['NAXIS2'] = chunkrange[3]-chunkrange[2]
 
-    qhdu=fits.PrimaryHDU(q,new_header)
-    qerrhdu=fits.ImageHDU(q_err)
+    qhdu=fits.PrimaryHDU(temp_q,new_header)
+    qerrhdu=fits.ImageHDU(temp_q_err)
 
     hdulist=fits.HDUList([qhdu,qerrhdu])
 
