@@ -3,7 +3,8 @@ cimport numpy as np
 cimport cython
 
 from libc.math cimport atan2
-from libc.math cimport round #use atan2, round from c math library
+from libc.math cimport round
+from libc.math cimport sqrt #use atan2, round from c math library
 
 cdef extern from "math.h":
     double M_PI
@@ -18,9 +19,11 @@ ctypedef np.int_t DTYPEi_t
 @cython.boundscheck(False) # turn off bounds-checking for entire function
 @cython.wraparound(False) # turn off negative indexing for entire function
 
-def make_angle_cube(np.ndarray[DTYPEf_t, ndim=3] qcube, np.ndarray[DTYPEf_t, ndim=3] ucube, np.ndarray[DTYPEf_t, ndim=2] rmmap, np.ndarray[DTYPEf_t, ndim=1] l2):
+def make_angle_cube(np.ndarray[DTYPEf_t, ndim=3] qcube, np.ndarray[DTYPEf_t, ndim=3] ucube, np.ndarray[DTYPEf_t, ndim=3] qerr, np.ndarray[DTYPEf_t, ndim=3] uerr, np.ndarray[DTYPEf_t, ndim=2] rmmap, np.ndarray[DTYPEf_t, ndim=1] l2):
 
     cdef int i,j,k
+
+    cdef float p
 
     cdef int cchan = qcube.shape[0]/2
 
@@ -31,14 +34,13 @@ def make_angle_cube(np.ndarray[DTYPEf_t, ndim=3] qcube, np.ndarray[DTYPEf_t, ndi
     cdef np.ndarray[DTYPEf_t,ndim=3] npi = np.empty([qcube.shape[0],qcube.shape[1],qcube.shape[2]],dtype=DTYPEf)
 
     cdef np.ndarray[DTYPEf_t,ndim=2] cangle = np.empty([qcube.shape[1],qcube.shape[2]],dtype=DTYPEf)
+
+    cdef np.ndarray[DTYPEf_t,ndim=3] angerr = np.empty([qcube.shape[0],qcube.shape[1],qcube.shape[2]],dtype=DTYPEf)
     
 
     for j in range(qcube.shape[1]):
-<<<<<<< HEAD
-        print "Doing dec slice",j
-=======
+
         #print "Doing dec slice",j
->>>>>>> 54729e4666ec9d2f9382e05caa0ea059584e9fa3
         for k in range(qcube.shape[2]):
             cangle[j,k]=0.5*atan2(ucube[cchan,j,k],qcube[cchan,j,k])
             for i in range(qcube.shape[0]):
@@ -47,8 +49,9 @@ def make_angle_cube(np.ndarray[DTYPEf_t, ndim=3] qcube, np.ndarray[DTYPEf_t, ndi
                 target[i,j,k]+=cangle[j,k]
                 npi[i,j,k]=round((target[i,j,k]-angle[i,j,k])/M_PI)
                 angle[i,j,k]+=M_PI*npi[i,j,k]
+                angerr[i,j,k]=sqrt((ucube[i,j,k]**2*qerr[i,j,k]**2+qcube[i,j,k]**2*uerr[i,j,k]**2))/(2*(qcube[i,j,k]**2+ucube[i,j,k]**2))
 
-    return angle
+    return angle,angerr
     
 
     

@@ -79,9 +79,27 @@ def fit_rm_peak(params):
 def open_and_trim(params):
 
     print "Opening q and u cubes..."
-    q=fits.getdata(params.qfile)
+    qhdu=fits.open(params.qfile)
+
+    qdata=qhdu[0]
+
+    qerrdata=qhdu[1]
+
+    q=qdata.data
+
+    qerr=qerrdata.data
+
     print "... Q done ..."
-    u=fits.getdata(params.ufile)
+    uhdu=fits.open(params.ufile)
+
+    udata=uhdu[0]
+    
+    uerrdata=uhdu[1]
+
+    u=udata.data
+
+    uerr=uerrdata.data
+
     print "... U done!"
 
     print "Getting rid of NaNs..."
@@ -93,47 +111,18 @@ def open_and_trim(params):
 
     print "...U done!"
 
-    print "Calculating RMS noise per channel..."
-    
-    params.q_rms=np.empty(params.nu_size)
+    return q.astype(np.float64),u.astype(np.float64),qerr.astype(np.float64),uerr.astype(np.float64)
 
-    for i in range (params.nu_size):
-        params.q_rms[i]=np.std(q[i,:,:])
+def make_angle_and_err(rm_map,params):
 
-    print "Q done!"
+    qcube,ucube,qerr,uerr=open_and_trim(params)
 
-     params.u_rms=np.empty(params.nu_size)
-
-    for i in range (params.nu_size):
-        params.u_rms[i]=np.std(u[i,:,:])
-
-    print "U done!"
-
-    return q.astype('float64'),u.astype('float64')
-
-def make_angle(rm_map,params):
-
-    qcube,ucube=open_and_trim(params)
-
-    print "Making angle cube..."
-    angle=ac.make_angle_cube(qcube,ucube,rm_map,params.l2)
+    print "Making angle cube and errors..."
+    angle,angle_err=ac.make_angle_cube(qcube,ucube,qerr,uerr,rm_map,params.l2)
     print "...done."
 
-##     cchan=params.nu_size/2
 
-##     angle=0.5*np.atan2(ucube,qcube)
-
-##     rm=np.repeat(rm_map.reshape(1,params.dec_size,params.ra_size),params.nphi,axis=0)
-
-##     target=rm*np.reshape(params.l2-params.l2[cchan],(sz,1,1))
-
-##     target += angle[cchan].reshape(1,sy,sx)
-
-##     npi=np.around(((target-angle)/np.pi))
-##     #npi[np.where(np.isnan(npi))]=0
-##     angle += pi * npi
-
-    return angle
+    return angle,angle_err
 
 
 def get_l2_l20(params):
@@ -171,14 +160,14 @@ def find_syn_angle(cube,syn_rm,params):
 def fit_angle_cube(angle_cube,rm0,params):
 
     print "Fitting angle cube..."
-    angle0,rm_map = cfit.fit_cube(angle_cube,params.l2)
+    angle0,rm_map, ang0err, rm_err = cfit.fit_cube(angle_cube,params.l2)
     print "...done."
 
     print "Getting synthesis zero-angles..."
     syn_angle=find_syn_angle(angle_cube,rm0,params)
     print "...done."
     
-    return rm_map,angle0,syn_angle
+    return rm_map,angle0,syn_angle,ang0err,rm_err
 
 def params_from_args():
 
@@ -231,7 +220,7 @@ def params_from_args():
 
     return parameters
 
-def new_header(params,object):
+def new_header(params,object,unit):
 
     old_header=fits.getheader(params.qfile)
 
@@ -247,34 +236,51 @@ def new_header(params,object):
 
     header['OBJECT']= 'GALFACTS '+params.field+' '+object
 
+    header['BUNIT']=unit
+
     header.add_comment('Made with rmsyn-fit.py')
     header.add_comment('on '+str(date))
 
 
     return header
 
-def output_maps(cube_rm,cube_angle,syn_rm,syn_angle,params):
+def output_maps(cube_rm,cube_rm_err,cube_angle,cube_angle_err,syn_rm,syn_angle,params):
 
     print "Output is in "+params.outdir
 
-    print "Writing Cube-derived RM map to "+params.outfile+"_cube_rm.fits "
+    print "Writing Cube-derived RM map and error to "+params.outfile+"_cube_rm.fits "
         
-    cube_rm_header=new_header(params,"cube RM map")
-    fits.writeto(params.outdir+params.outfile+"_cube_rm.fits",cube_rm, cube_rm_header)
+    cube_rm_header=new_header(params,"cube RM map","rad/m^2")
+    cube_rm_err_header=new_header(params,"cube RM errors", "rad/m^2")
 
-    print "Writing Cube-derived angle map to "+params.outfile+"_cube_angle.fits "
+    crmhdu=fits.PrimaryHDU(cube_rm,cube_rm_header)
+    crmerrhdu=fits.ImageHDU(cube_rm_err,cube_rm_err_header)
+
+    crmhdulist=fits.HDUlist([crmhdu,crmerrhdu])
+
+    crmhdulist.writeto(params.outdir+params.outfile+"_cube_rm.fits")
+
+
+    print "Writing Cube-derived angle map and error to "+params.outfile+"_cube_angle.fits "
         
-    cube_angle_header=new_header(params,"cube angle map")
-    fits.writeto(params.outdir+params.outfile+"_cube_angle.fits",cube_angle, cube_angle_header)
+    cube_angle_header=new_header(params,"cube ANGLE map","rad/m^2")
+    cube_angle_err_header=new_header(params,"cube ANGLE errors", "rad/m^2")
+
+    canglehdu=fits.PrimaryHDU(cube_angle,cube_angle_header)
+    cangleerrhdu=fits.ImageHDU(cube_angle_err,cube_angle_err_header)
+
+    canglehdulist=fits.HDUlist([canglehdu,cangleerrhdu])
+
+    canglehdulist.writeto(params.outdir+params.outfile+"_cube_angle.fits")
 
     print "Writing synthesis-derived RM map to "+params.outfile+"_syn_rm.fits "
         
-    syn_rm_header=new_header(params,"syn RM map")
+    syn_rm_header=new_header(params,"syn RM map","rad/m^2")
     fits.writeto(params.outdir+params.outfile+"_syn_rm.fits",syn_rm, syn_rm_header)
 
     print "Writing synthesis-derived angle map to "+params.outfile+"_syn_angle.fits "
         
-    syn_angle_header=new_header(params,"syn angle map")
+    syn_angle_header=new_header(params,"syn angle map","rad")
     fits.writeto(params.outdir+params.outfile+"_syn_angle.fits",syn_angle, syn_angle_header)
 
 
@@ -287,9 +293,9 @@ def main():
 
     angle=make_angle(syn_rm,params)
 
-    cube_rm,cube_angle,syn_angle = fit_angle_cube(angle,syn_rm,params)
+    cube_rm,cube_angle,syn_angle,cube_angle_err,cube_rm_err = fit_angle_cube(angle,syn_rm,params)
 
-    output_maps(cube_rm,cube_angle,syn_rm,syn_angle,params)
+    output_maps(cube_rm,cube_rm_err,cube_angle,cube_angle_err,syn_rm,syn_angle,params)
 
 
 if __name__ == "__main__":

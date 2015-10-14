@@ -68,12 +68,13 @@ cdef linfit(np.ndarray[DTYPEf_t, ndim=1] y, np.ndarray[DTYPEf_t, ndim=1] x,np.nd
     sa = np.sqrt(1. / S * (1. - Sx * covab))
     sb=np.sqrt(1./Stt)
 
-    return a, b
+    return a, b, sa, sb
+    
 
 @cython.boundscheck(False) # turn off bounds-checking for entire function
 @cython.wraparound(False) # turn off negative indexing for entire function
 
-def fit_cube(np.ndarray[DTYPEf_t, ndim=3] cube,np.ndarray[DTYPEf_t, ndim=1] l2):
+def fit_cube(np.ndarray[DTYPEf_t, ndim=3] cube,np.ndarray[DTYPEf_t, ndim=3] angerr,np.ndarray[DTYPEf_t, ndim=1] l2):
 
     cdef int i,j
 
@@ -81,10 +82,14 @@ def fit_cube(np.ndarray[DTYPEf_t, ndim=3] cube,np.ndarray[DTYPEf_t, ndim=1] l2):
 
     cdef np.ndarray[DTYPEf_t,ndim=2] angle0 = np.empty([cube.shape[1],cube.shape[2]],dtype=DTYPEf)
 
+    cdef np.ndarray[DTYPEf_t,ndim=2] rmerr = np.empty([cube.shape[1],cube.shape[2]],dtype=DTYPEf)
+
+    cdef np.ndarray[DTYPEf_t,ndim=2] angle0err = np.empty([cube.shape[1],cube.shape[2]],dtype=DTYPEf)
+
     for i in range(cube.shape[1]):
         for j in range(cube.shape[2]):
-            rm[i,j],angle0[i,j]=linfit(cube[:,i,j],l2)
+            angle0[i,j],rm[i,j],angle0err[i,j],rmerr[i,j]=linfit(cube[:,i,j],l2,angerr[:,i,j])
 
-    return rm, angle0
+    return angle0, rm,angle0err,rmerr
 
     
