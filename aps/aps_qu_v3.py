@@ -56,12 +56,10 @@ width_deg=width/60.
 # first step is to get images and import header and data into numpy arrays
 q_hdu=fits.open(q_in) 
 q_im=q_hdu[0].data
-<<<<<<< HEAD
-q_im=q_im[0,:,:]
-=======
+
 if len(q_im.shape) == 3:
     q_im=q_im[0,:,:]
->>>>>>> bfab1cee915774ee0026ff6e68d072827b950814
+
 q_head=q_hdu[0].header
 
 xw=q_head['NAXIS1']
@@ -69,12 +67,10 @@ yw=q_head['NAXIS2']
 
 u_hdu=fits.open(u_in) 
 u_im=u_hdu[0].data
-<<<<<<< HEAD
-u_im=u_im[0,:,:]
-=======
+
 if len(u_im.shape) == 3:
     u_im=q_im[0,:,:]
->>>>>>> bfab1cee915774ee0026ff6e68d072827b950814
+
 u_head=u_hdu[0].header
 
 #Assign zero to blanks
@@ -188,18 +184,13 @@ for i in range (nochunks):
     nonzero_bb=np.where(bb_hist!=0)
     bb_average[nonzero_bb]=area_width*bb_hist[nonzero_bb]/ell_hist[nonzero_bb]
 
-<<<<<<< HEAD
-    #print bb_average[0:30]
-    
-#Fit the power-law linearly, for intermediate ells
-    slope,offset,c,d,e=stats.linregress(np.log10(bins_axis[30:70]),np.log10((ee_average[30:70]+bb_average[30:70])/2))
-=======
+
     #print bins_axis[30:70]-bins_axis[50]
     #print np.log10(bins_axis[30:70])-np.log10(bins_axis[50])    
     
 #Fit the power-law linearly, for intermediate ells, subtract center value
     slope,offset,c,d,e=stats.linregress(np.log10(bins_axis[30:70])-np.log10(bins_axis[50]),np.log10((ee_average[30:70]+bb_average[30:70])/2))
->>>>>>> bfab1cee915774ee0026ff6e68d072827b950814
+
     print slope,offset
     pwr_label="power law, index="+str(slope)[:6]
     
@@ -231,11 +222,9 @@ for i in range (nochunks):
     bb_lin,=ax.plot(bins_axis[nonzero_bb],bb_average[nonzero_bb],'b-',alpha=0.5)
     bb_mark,=ax.plot(bins_axis[nonzero_bb],bb_average[nonzero_bb],'b|',markersize=8)
 
-<<<<<<< HEAD
-    power_law,= ax.plot(bins_axis[30:70],10**(slope*np.log10(bins_axis[30:70])+offset),'k-',linewidth=0.8)
-=======
+
     power_law,= ax.plot(bins_axis[30:70],10**(slope*(np.log10(bins_axis[30:70])-np.log10(bins_axis[50]))+offset),'k-',linewidth=0.8)
->>>>>>> bfab1cee915774ee0026ff6e68d072827b950814
+
 
     beam_cut =ax.axvline(x=180/(3.5/60.),color='k',linestyle='dotted',alpha=0.7)
 
