@@ -257,12 +257,6 @@ def open_and_trim(params,i):
         q=q[:,params.range[2]:params.range[3],params.range[0]:params.range[1]]
         u=u[:,params.range[2]:params.range[3],params.range[0]:params.range[1]]
         
-    else:
-        params.range=np.empty(4)
-        params.range[0]=0
-        params.range[1]=q.shape[2]-1
-        params.range[2]=0
-        params.range[3]=q.shape[1]-1
 
     chunksize=q.shape[2]/params.nochunks
     chunk_remain=q.shape[2]%params.nochunks
@@ -352,10 +346,10 @@ def output_cube(cube,params,chunkno):
     print "Writing RM cube to "+params.outfile+"_"+str(chunkno)+".fits "
     
     if params.nohead:
-        fits.writeto(params.outdir+params.outfile+"_"+str(chunkno)+".fits",np.abs(cube))
+        fits.writeto(params.outdir+params.outfile+"_"+str(chunkno)+".fits",cube)
     else:
         rm_header=new_header(params)
-        fits.writeto(params.outdir+params.outfile+"_"+str(chunkno)+".fits",np.abs(cube), rm_header)
+        fits.writeto(params.outdir+params.outfile+"_"+str(chunkno)+".fits",cube, rm_header)
 
         
     
@@ -420,6 +414,7 @@ def main():
         q,u = open_and_trim(params,i)
 
         rm_cube=di.compute_dicube(q,u,params.phi,params.l2,params.weights,params.l20)
+        rm_cube=np.abs(rm_cube).astype(np.float32)
         output_cube(rm_cube,params,i)
 
     

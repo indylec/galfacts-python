@@ -17,6 +17,8 @@ angle_files=glob.glob(field_low+'/*[0-4]_cube_angle*')
 
 rm_files=glob.glob(field_low+'/*[0-4]_cube_rm*')
 
+rm_files.sort()
+angle_files.sort()
 print "Stitching together",angle_files,rm_files
 
 for i in range(len(angle_files)):
@@ -24,17 +26,17 @@ for i in range(len(angle_files)):
     temp_ang_err=fits.getdata(angle_files[i],1)
 
     temp_rm=fits.getdata(rm_files[i])
-    temp_rm_err=fits.getdata(rmfiles[i],1)
+    temp_rm_err=fits.getdata(rm_files[i],1)
 
     if i == 0:
-        angle=temp_ang
+        angle_map=temp_ang
         angle_err=temp_ang_err
 
         rm_map=temp_rm
         rm_err=temp_rm_err
 
     else:
-        angle=np.hstack((angle,temp_ang))
+        angle_map=np.hstack((angle_map,temp_ang))
         angle_err=np.hstack((angle_err,temp_ang_err))
 
         rm_map=np.hstack((rm_map,temp_rm))

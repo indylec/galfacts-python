@@ -80,6 +80,9 @@ for i in range(nochunks):
     new_header['CRVAL2'] = crval_dec
     new_header['NAXIS2'] = chunkrange[3]-chunkrange[2]
 
+    temp_q=temp_q.astype(np.float32)
+    temp_q_err=temp_q_err.astype(np.float32)
+
     qhdu=fits.PrimaryHDU(temp_q,new_header)
     qerrhdu=fits.ImageHDU(temp_q_err)
 
