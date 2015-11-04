@@ -7,6 +7,8 @@ qfile=sys.argv[1]
 outdir=sys.argv[2]
 field=sys.argv[3]
 stokes=sys.argv[4]
+weightfile=sys.argv[5]
+
 
 nochunks=5
 binsize=10
@@ -14,6 +16,13 @@ binsize=10
 #read in Q
 q=fits.getdata(qfile)
 qhead=fits.getheader(qfile)
+
+weights=np.loadtxt(weightfile)
+bad_chans=np.where(weights==0)
+
+for bad in bad_chans:
+    q[bad,:,:]=0.
+
 
 #loop over chunks
 

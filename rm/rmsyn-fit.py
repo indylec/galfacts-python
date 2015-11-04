@@ -142,7 +142,8 @@ def get_l2_l20(params):
     l2 = 0.5 * c2 * ((nu - 0.5 * params.dnu) ** -2 + (nu + 0.5 * params.dnu) ** -2)
     params.l2 = np.flipud(l2)
         
-    if params.weights!= None:
+
+    if params.weights != None:
         if params.nu_size != params.weights.shape[0]:
             raise Exception ('Weights and freq.axis have different sizes')
         else:
@@ -152,6 +153,7 @@ def get_l2_l20(params):
         params.l20 = np.sum(params.l2)/params.nu_size
     print"...done."
 
+<<<<<<< HEAD
 #def find_syn_angle(cube,syn_rm,params):
 #    syn_angle=np.empty((params.dec_size,params.ra_size))
 #    from scipy import interpolate
@@ -164,17 +166,21 @@ def get_l2_l20(params):
 
 def fit_angle_cube(angle_cube,angle_err,rm0,params):
 
+    good_chans=np.nonzero(params.weights)[0]
     
-
     print "Fitting angle cube..."
-    angle0,rm_map, ang0err, rm_err = cfit.fit_cube(angle_cube,angle_err,params.l2)
+
+    angle0, rm_map, ang0err, rm_err, chisq = cfit.fit_cube(angle_cube[good_chans,:,:],params.l2[good_chans])
+
     print "...done."
 
     #print "Getting synthesis zero-angles..."
     #syn_angle=find_syn_angle(angle_cube,rm0,params)
     #print "...done."
     
-    return rm_map,angle0,ang0err,rm_err#,syn_angle
+
+    return rm_map,angle0,ang0err,rm_err
+
 
 def params_from_args():
 
@@ -251,7 +257,7 @@ def new_header(params,object,unit):
 
     return header
 
-def output_maps(cube_rm,cube_rm_err,cube_angle,cube_angle_err,syn_rm,params):
+def output_maps(cube_rm,cube_rm_err,cube_angle,cube_angle_err,syn_rm,chisq,params):
 
     print "Output is in "+params.outdir
 
@@ -285,10 +291,10 @@ def output_maps(cube_rm,cube_rm_err,cube_angle,cube_angle_err,syn_rm,params):
     syn_rm_header=new_header(params,"syn RM map","rad/m^2")
     fits.writeto(params.outdir+params.outfile+"_syn_rm.fits",syn_rm, syn_rm_header)
 
-    #print "Writing synthesis-derived angle map to "+params.outfile+"_syn_angle.fits "
+    print "Writing chi-squared  map to "+params.outfile+"_chisq.fits "
         
-    #syn_angle_header=new_header(params,"syn angle map","rad")
-    #fits.writeto(params.outdir+params.outfile+"_syn_angle.fits",syn_angle, syn_angle_header)
+    chisq_header=new_header(params,"chi-squared map"," ")
+    fits.writeto(params.outdir+params.outfile+"_chisq.fits",chisq, chisq_header)
 
 
 def main():
@@ -300,9 +306,11 @@ def main():
 
     angle,ang_err=make_angle_and_err(syn_rm,params)
 
-    cube_rm,cube_angle,cube_angle_err,cube_rm_err = fit_angle_cube(angle,ang_err,syn_rm,params)
 
-    output_maps(cube_rm,cube_rm_err,cube_angle,cube_angle_err,syn_rm,params)
+    cube_rm,cube_angle,cube_angle_err,cube_rm_err,chisq = fit_angle_cube(angle,ang_err,syn_rm,params)
+
+
+    output_maps(cube_rm,cube_rm_err,cube_angle,cube_angle_err,syn_rm,chisq,params)
 
 
 if __name__ == "__main__":
