@@ -39,9 +39,12 @@ cdef linfit(np.ndarray[DTYPEf_t, ndim=1] y, np.ndarray[DTYPEf_t, ndim=1] x,np.nd
 
     cdef np.ndarray[DTYPEf_t,ndim=1] ty = np.empty([y.shape[0]],dtype=DTYPEf)
 
+    cdef np.ndarray[DTYPEf_t,ndim=1] yfit = np.empty([y.shape[0]],dtype=DTYPEf)
+
+    cdef np.ndarray[DTYPEf_t,ndim=1] chi_term = np.empty([y.shape[0]],dtype=DTYPEf)
 
     cdef float S, Sx, Sy, Stt, b, a,tysum
-    cdef int i
+    cdef int i,j
     cdef int chan=y.shape[0]
 
     for i in range(chan):
@@ -68,7 +71,13 @@ cdef linfit(np.ndarray[DTYPEf_t, ndim=1] y, np.ndarray[DTYPEf_t, ndim=1] x,np.nd
     sa = np.sqrt(1. / S * (1. - Sx * covab))
     sb=np.sqrt(1./Stt)
 
-    return a, b, sa, sb
+    for j in range(chan):
+        yfit[j] = a + b * x[j]
+        chi_term[j]=((y[j]-yfit[j]) / y_unc[j])**2
+
+    chisq=cython_fsum(chi_term)
+
+    return a, b, sa, sb, chisq
     
 
 @cython.boundscheck(False) # turn off bounds-checking for entire function
@@ -86,10 +95,12 @@ def fit_cube(np.ndarray[DTYPEf_t, ndim=3] cube,np.ndarray[DTYPEf_t, ndim=3] ange
 
     cdef np.ndarray[DTYPEf_t,ndim=2] angle0err = np.empty([cube.shape[1],cube.shape[2]],dtype=DTYPEf)
 
+    cdef np.ndarray[DTYPEf_t,ndim=2] chi2 = np.empty([cube.shape[1],cube.shape[2]],dtype=DTYPEf)
+
     for i in range(cube.shape[1]):
         for j in range(cube.shape[2]):
-            angle0[i,j],rm[i,j],angle0err[i,j],rmerr[i,j]=linfit(cube[:,i,j],l2,angerr[:,i,j])
+            angle0[i,j],rm[i,j],angle0err[i,j],rmerr[i,j],chi2[i,j]=linfit(cube[:,i,j],l2,angerr[:,i,j])
 
-    return angle0, rm,angle0err,rmerr
+    return angle0, rm,angle0err,rmerr,chi2
 
     

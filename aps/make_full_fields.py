@@ -24,7 +24,7 @@ for i in range(len(angle_files)):
     temp_ang_err=fits.getdata(angle_files[i],1)
 
     temp_rm=fits.getdata(rm_files[i])
-    temp_rm_err=fits.getdata(rmfiles[i],1)
+    temp_rm_err=fits.getdata(rm_files[i],1)
 
     if i == 0:
         angle=temp_ang
