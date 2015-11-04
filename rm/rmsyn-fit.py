@@ -137,14 +137,14 @@ def get_l2_l20(params):
     l2 = 0.5 * c2 * ((nu - 0.5 * params.dnu) ** -2 + (nu + 0.5 * params.dnu) ** -2)
     params.l2 = np.flipud(l2)
         
-    ## if params.weights != None:
-    ##     if params.nu_size != params.weights.shape[0]:
-    ##         raise Exception ('Weights and freq.axis have different sizes')
-    ##     else:
-    ##         params.l20 = np.sum(params.weights*params.l2)/np.sum(params.weights)
-    ## else:
-    ##     params.weights=np.ones(params.nu_size)
-    ##     params.l20 = np.sum(params.l2)/params.nu_size
+    if params.weights != None:
+        if params.nu_size != params.weights.shape[0]:
+            raise Exception ('Weights and freq.axis have different sizes')
+        else:
+            params.l20 = np.sum(params.weights*params.l2)/np.sum(params.weights)
+    else:
+        params.weights=np.ones(params.nu_size)
+        params.l20 = np.sum(params.l2)/params.nu_size
     print"...done."
 
 ## def find_syn_angle(cube,syn_rm,params):
@@ -159,8 +159,10 @@ def get_l2_l20(params):
 
 def fit_angle_cube(angle_cube,rm0,params):
 
+    good_chans=np.nonzero(params.weights)[0]
+    
     print "Fitting angle cube..."
-    angle0,rm_map, ang0err, rm_err = cfit.fit_cube(angle_cube,params.l2)
+    angle0, rm_map, ang0err, rm_err, chisq = cfit.fit_cube(angle_cube[good_chans,:,:],params.l2[good_chans])
     print "...done."
 
     #print "Getting synthesis zero-angles..."
@@ -179,7 +181,7 @@ def params_from_args():
     parser.add_argument("outfile",help="Output file prefix")
     parser.add_argument("outdir",help="Output directory")
     parser.add_argument("field",help="GALFACTS Field")
-    #parser.add_argument("-w","--weights",dest="weights_in",help="Optional weight file")
+    parser.add_argument("-w","--weights",dest="weights_in",help="Optional weight file")
     #parser.add_argument("-s","--synth",help="output rm0 and angle-0 from synthesis", action="store_true")
     #parser.add_argument("-f","--fit",help="output rm0 and angle-0 from  angle cube fit", action="store_true")
     
@@ -194,8 +196,8 @@ def params_from_args():
     parameters.field=args.field
     parameters.rmfile=args.rm_in
 
-    #if args.weights_in:
-        #parameters.weights=np.loadtxt(args.weights_in)
+    if args.weights_in:
+        parameters.weights=np.loadtxt(args.weights_in)
 
     #if args.synth != None:
     #   parameters.synth=args.synth

@@ -101,6 +101,6 @@ def fit_cube(np.ndarray[DTYPEf_t, ndim=3] cube,np.ndarray[DTYPEf_t, ndim=3] ange
         for j in range(cube.shape[2]):
             angle0[i,j],rm[i,j],angle0err[i,j],rmerr[i,j],chi2[i,j]=linfit(cube[:,i,j],l2,angerr[:,i,j])
 
-    return angle0, rm,angle0err,rmerr,chi2
+    return angle0, rm, angle0err, rmerr, chi2
 
     
