@@ -306,8 +306,8 @@ def main():
 
     angle,ang_err=make_angle_and_err(syn_rm,params)
 
-
     cube_rm,cube_angle,cube_angle_err,cube_rm_err,chisq = fit_angle_cube(angle,ang_err,syn_rm,params)
+
 
 
     output_maps(cube_rm,cube_rm_err,cube_angle,cube_angle_err,syn_rm,chisq,params)
