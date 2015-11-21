@@ -6,20 +6,28 @@ import matplotlib.pyplot as mpl
 
 import aplpy
 
+from astropy import fits
+
+
+
 fig = mpl.figure(figsize=(14,7))
 
-f1 = aplpy.FITSFigure('N4_polarised_intensity.fits', figure=fig)
+f1 = aplpy.FITSFigure('GALFACTS_P.fits', figure=fig, convention='calabretta')
 
 f1.tick_labels.set_font(size='x-small')
 f1.axis_labels.set_font(size='small')
+f1.axis_labels.hide()
+f1.ticks.hide_x()
+f1.tick_labels.hide_x()
+f1.tick_labels.set_yformat('dd')
 f1.show_colorscale(cmap='afmhot')
 f1.add_colorbar()
 f1.colorbar.set_axis_label_text('brightness [K]')
-f1.show_rectangles(0,32,1000,1000)
-f1.show_rectangles(1000,32,1000,1000)
-f1.show_rectangles(2000,32,1000,1000)
-f1.show_rectangles(3000,32,1000,1000)
-f1.show_rectangles(4000,32,1000,1000)
+#f1.show_rectangles(0,32,1000,1000)
+#f1.show_rectangles(1000,32,1000,1000)
+#f1.show_rectangles(2000,32,1000,1000)
+#f1.show_rectangles(3000,32,1000,1000)
+#f1.show_rectangles(4000,32,1000,1000)
 
 ## f2 = aplpy.FITSFigure('S2rm0.fits', figure=fig,
 ##                       subplot=[0.1, 0.4, 0.9, 0.3])
@@ -45,4 +53,4 @@ f1.show_rectangles(4000,32,1000,1000)
 ## f2.axis_labels.hide_x()
 ## f2.tick_labels.hide_x()
 
-fig.savefig('n4pol_withchunks.pdf', bbox_inches='tight')
+fig.savefig('all_pol_2.pdf', bbox_inches='tight')

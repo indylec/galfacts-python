@@ -293,7 +293,7 @@ def main():
 
     syn_rm=fit_rm_peak(params)
 
-    angle=make_angle(syn_rm,params)
+    angle,ang_err=make_angle_and_err(syn_rm,params)
 
     cube_rm,cube_angle,cube_angle_err,cube_rm_err = fit_angle_cube(angle,syn_rm,params)
 
