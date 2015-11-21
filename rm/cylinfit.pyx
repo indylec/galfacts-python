@@ -48,6 +48,8 @@ cdef linfit(np.ndarray[DTYPEf_t, ndim=1] y, np.ndarray[DTYPEf_t, ndim=1] x,np.nd
     cdef int chan=y.shape[0]
 
     for i in range(chan):
+        if y_unc[i]==0:
+            y_unc[i]=1.
         ryu2[i]=1./y_unc[i]**2
         xs[i]=x[i]*ryu2[i]
         ys[i]=y[i]*ryu2[i]

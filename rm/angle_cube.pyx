@@ -49,7 +49,11 @@ def make_angle_cube(np.ndarray[DTYPEf_t, ndim=3] qcube, np.ndarray[DTYPEf_t, ndi
                 target[i,j,k]+=cangle[j,k]
                 npi[i,j,k]=round((target[i,j,k]-angle[i,j,k])/M_PI)
                 angle[i,j,k]+=M_PI*npi[i,j,k]
-                angerr[i,j,k]=sqrt((ucube[i,j,k]**2*qerr[i,j,k]**2+qcube[i,j,k]**2*uerr[i,j,k]**2))/(2*(qcube[i,j,k]**2+ucube[i,j,k]**2))
+                p=qcube[i,j,k]**2+ucube[i,j,k]**2
+                if p == 0:
+                    angerr[i,j,k]=0.
+                else:
+                    angerr[i,j,k]=sqrt((ucube[i,j,k]**2*qerr[i,j,k]**2+qcube[i,j,k]**2*uerr[i,j,k]**2))/(2*p)
 
     return angle,angerr
     

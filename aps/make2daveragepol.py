@@ -1,21 +1,23 @@
 #!/Users/leclercq/miniconda/bin/python
 
 import numpy as np
-#import theil_sen as ts
-#import matplotlib
-#matplotlib.use('MacOSX')
-#import matplotlib.pylab as plt
 from astropy.io import fits
 import sys
 from numpy import pi
+import glob
 
-infile=sys.argv[1]
-field=sys.argv[3]
+field=sys.argv[1]
+
+qglob=field.lower()+'/*Q.fits'
+uglob=field.lower()+'/*U.fits'
+
+qfile=glob.glob(qglob)
+ufile=glob.glob(uglob)
 
 qin=fits.open(sys.argv[1])
 uin=fits.open(sys.argv[2])
 
-polfile=field+'_polarised_intensity.fits'
+polfile='/local2/scratch/GALFACTS/rm_synthesis/rmsyn/'+field.lower()+'/'+field+'_polarised_intensity.fits'
 
 header_cube=qin[0].header
 
@@ -36,7 +38,7 @@ if len(uin[0].data.shape) == 3:
 else:
     udata=uin[0].data
 
->>>>>>> bfab1cee915774ee0026ff6e68d072827b950814
+
 
 polint=np.sqrt(qdata**2+udata**2)
 
