@@ -153,7 +153,7 @@ def get_l2_l20(params):
         params.l20 = np.sum(params.l2)/params.nu_size
     print"...done."
 
-<<<<<<< HEAD
+
 #def find_syn_angle(cube,syn_rm,params):
 #    syn_angle=np.empty((params.dec_size,params.ra_size))
 #    from scipy import interpolate
@@ -170,7 +170,7 @@ def fit_angle_cube(angle_cube,angle_err,rm0,params):
     
     print "Fitting angle cube..."
 
-    angle0, rm_map, ang0err, rm_err, chisq = cfit.fit_cube(angle_cube[good_chans,:,:],params.l2[good_chans])
+    angle0, rm_map, ang0err, rm_err, chisq = cfit.fit_cube(angle_cube[good_chans,:,:],angle_err[good_chans,:,:],params.l2[good_chans])
 
     print "...done."
 
@@ -179,7 +179,7 @@ def fit_angle_cube(angle_cube,angle_err,rm0,params):
     #print "...done."
     
 
-    return rm_map,angle0,ang0err,rm_err
+    return rm_map,angle0,ang0err,rm_err,chisq
 
 
 def params_from_args():
