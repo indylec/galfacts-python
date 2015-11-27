@@ -9,7 +9,7 @@ from astropy.io import fits
 
 #take command line input of fits file name
 input_file=sys.argv[1]
-nside=sys.argv[2]
+nside=int(sys.argv[2])
 
 
 def regrid (nside, inmap, channel):
@@ -32,32 +32,30 @@ def regrid (nside, inmap, channel):
     
     ttonechan=tt[channel,:,:]
 
-    print 'Regridding channel number {!s}.'.format(channel)
+    #print 'Regridding channel number {!s}.'.format(channel)
 
     
-
+    print "Getting healpix angles"
     #get HEALPix grid in 2D angles
     theta,phi=hp.pixelfunc.pix2ang(nside,np.arange(npix))
     dec=(np.pi*0.5-theta)*180.0/np.pi
     ra=phi*360.0/(np.pi*2.0)
 
-    print 'cdelt1:',cdelt1
-
+    # print 'cdelt1:',cdelt1
+ 
     #get pixel values to interpolate at
+    print "getting corresponding pixels"
     rapix = (ra - crval1)/cdelt1+crpix1-1
     
     decpix= (dec-crval2)/cdelt2 + crpix2-1
 
     #print 'first 100 values of rapix:',rapix[0:100]
     #print 'first 100 values of decpix:',decpix[0:100]
-    print 'ttonechan.shape is', ttonechan.shape
+    #print 'ttonechan.shape is', ttonechan.shape
 
-    print "Interpolating..."
+    print "Interpolating:"
     #interpolate the tt map onto the healpix grid!
-    coords=np.vstack((rapix,decpix)).T
-    x=np.arange(ttlen)
-    y=np.arange(naxis2)
-
+    
     temptt=ndimage.map_coordinates(ttonechan,[decpix,rapix],order=3,cval=-1.6375e+30,prefilter=False)
 
     print "...done!"
@@ -75,7 +73,7 @@ map=regrid(nside,input_file,0)
 #hp.mollview(map)
 #plt.show()
 
-hp.write_map('galfacts_p_healpix.fits',map)
+hp.write_map('galfacts_I_healpix.fits',map)
     
 
    
