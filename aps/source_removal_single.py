@@ -8,7 +8,8 @@ import inpaint
 
 table_in=sys.argv[1]
 im_in=sys.argv[2]
-stokes=sys.argv[3]
+field=sys.argv[3]
+stokes=sys.argv[4]
 
 
 tableHDU=fits.open(table_in)
@@ -205,4 +206,4 @@ print '...done.'
 
 #output new map
 newqhdu=fits.PrimaryHDU(im_filled,header=head)
-newqhdu.writeto('S1_i_inpaint_final.fits')
+newqhdu.writeto(field+'_'+stokes+'_inpainted.fits')
