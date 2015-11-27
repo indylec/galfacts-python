@@ -8,16 +8,18 @@ import glob
 
 field=sys.argv[1]
 
-qglob=field.lower()+'/*Q.fits'
-uglob=field.lower()+'/*U.fits'
+qglob=field+'*_Q_*.fits'
+uglob=field+'*_U_*.fits'
 
 qfile=glob.glob(qglob)
+#print qfile[0]
+#sys.exit('')
 ufile=glob.glob(uglob)
 
-qin=fits.open(sys.argv[1])
-uin=fits.open(sys.argv[2])
+qin=fits.open(qfile[0])
+uin=fits.open(ufile[0])
 
-polfile='/local2/scratch/GALFACTS/rm_synthesis/rmsyn/'+field.lower()+'/'+field+'_polarised_intensity.fits'
+polfile='/Users/leclercq/galfacts/inpainting/'+field+'_P_inpainted.fits'
 
 header_cube=qin[0].header
 

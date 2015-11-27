@@ -267,6 +267,6 @@ for i in range (nochunks):
 
 
 
-    fig.savefig("/Users/leclercq/galfacts/aps/plots/v4.1/"+field+"_apsv4.1_dqa3.1.2_c"+str(i)+".pdf",dpi=100)
+    fig.savefig("/Users/leclercq/galfacts/aps/plots/v4.2/"+field+"_apsv4.2_dqa3.1.2_c"+str(i)+".pdf",dpi=100)
 
 #plt.show()
