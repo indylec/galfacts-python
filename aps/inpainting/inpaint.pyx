@@ -78,7 +78,7 @@ def replace_nans( np.ndarray[DTYPEf_t, ndim=2] array, int max_iter, float tol, i
     # fill new array with input elements
     for i in range(array.shape[0]):
         for j in range(array.shape[1]):
-	        filled[i,j] = array[i,j]
+            filled[i,j] = array[i,j]
 
     # make several passes
     # until we reach convergence

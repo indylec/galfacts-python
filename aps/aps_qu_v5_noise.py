@@ -11,16 +11,17 @@ from numpy import pi
 from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
-from scipy import stats
+#from scipy import stats
+from scipy import optimize as sciopt
 import os.path
 pi=np.pi
 
 q_in=sys.argv[1]
 u_in=sys.argv[2]
 pol_in=sys.argv[3]
-latlon_out=sys.argv[4]
-field=sys.argv[5]
-width=int(sys.argv[6])
+#latlon_out=sys.argv[4]
+field=sys.argv[4]
+width=int(sys.argv[5])
 
 
 
@@ -124,7 +125,7 @@ phi_ell=np.arctan2(elly,ellx)
 #Make ell bins, log-spaced, and bin ells
 bins=np.logspace(np.log10(10.0),np.log10(ell_max),100).astype(np.uint64)
 ell_scale=bins*(bins+1)/2.*pi
-print "ell bins:", bins
+#print "ell bins:", bins
 ell_hist=np.histogram(ell_r,bins)[0]
 
 #axis stuff for plots
@@ -175,8 +176,8 @@ for i in range (nochunks):
     ee=ee/1024**2
     bb=bb/1024**2
 
-    ee_scaled=ee/ft_beam
-    bb_scaled=bb/ft_beam
+    ee_scaled=ee#/ft_beam
+    bb_scaled=bb#/ft_beam
 
 #Bin the C_l for E and B to calculate radial average
     
@@ -192,35 +193,59 @@ for i in range (nochunks):
     nonzero_bb=np.where(bb_hist!=0)
     bb_average[nonzero_bb]=area_width*bb_hist[nonzero_bb]/ell_hist[nonzero_bb]
 
+    nz=np.intersect1d(nonzero_ee,nonzero_bb)
+
+    print "There are are ",nz.shape,"nonzero elements with the same index"
+
+    eb=(ee_average[nz]+bb_average[nz])/2.
+
 
     #print bins_axis[30:70]-bins_axis[50]
     #print np.log10(bins_axis[30:70])-np.log10(bins_axis[50])    
     
 #Fit the power-law linearly, for intermediate ells, subtract center value
-    slope,offset,c,d,e=stats.linregress(np.log10(bins_axis[30:70])-np.log10(bins_axis[50]),np.log10((ee_average[30:70]+bb_average[30:70])/2))
+    #slope,offset,c,d,e=stats.linregress(np.log10(bins_axis[30:70])-np.log10(bins_axis[50]),np.log10((ee_average[30:70]+bb_average[30:70])/2))
 
-    print slope,offset
-    pwr_label="power law, index="+str(slope)[:6]
+    #Fit modified power law accounting for effect of beam and noise
+    ## print "Pivot point is ell=",bins_axis[50]
+    
+    ## def apsfit_ee(x,a,w,n):
+    ##     return ee_average[50]*w*(x/bins_axis[50])**a + n
+    ## def apsfit_bb(x,a,w,n):
+    ##     return bb_average[50]*w*(x/bins_axis[50])**a + n
+    ## def apsfit_eb(x,a,w,n):
+    ##     return eb[50]*w*(x/bins_axis[50])**a + n
+
+    ## pfit_ee,pcov_ee=sciopt.curve_fit(apsfit_ee,bins_axis[nonzero_ee],ee_average[nonzero_ee])
+    ## pfit_bb,pcov_bb=sciopt.curve_fit(apsfit_bb,bins_axis[nonzero_bb],bb_average[nonzero_bb])
+    ## pfit_eb,pcov_eb=sciopt.curve_fit(apsfit_eb,bins_axis[nz],eb)
+
+    ## print "ee fit params (index, weight, noise):", pfit_ee
+    ## print "bb fit params (index, weight, noise):", pfit_bb
+    ## print "eb fit params (index, weight, noise):", pfit_eb
+
+    #print slope,offset
+    #pwr_label="power law, index="+str(slope)[:6]
 
 #Store the center pixel galactic coordinates and APS slope value
 
-    lon,lat=w.all_pix2world(center_pix_x[i],center_pix_y[i],0)
+    ## lon,lat=w.all_pix2world(center_pix_x[i],center_pix_y[i],0)
 
-    icrs_coords=SkyCoord(lon,lat,frame='icrs',unit='deg')
+    ## icrs_coords=SkyCoord(lon,lat,frame='icrs',unit='deg')
 
-    gal_coords=icrs_coords.galactic
+    ## gal_coords=icrs_coords.galactic
 
-    row=field+'{0:2d} '.format(i) +gal_coords.to_string('decimal')+' {0:.3f} '.format(slope) +'\n'
+    ## row=field+'{0:2d} '.format(i) +gal_coords.to_string('decimal')+' {0:.3f} '.format(slope) +'\n'
 
-    if os.path.isfile(latlon_out):
-        f=open(latlon_out, 'a')
-        f.write(row)
-        f.close()
-    else:
-        f=open(latlon_out,'w')
-        f.write('#Field  Chunk  l   b   slope\n')
-        f.write(row)
-        f.close()
+    ## if os.path.isfile(latlon_out):
+    ##     f=open(latlon_out, 'a')
+    ##     f.write(row)
+    ##     f.close()
+    ## else:
+    ##     f=open(latlon_out,'w')
+    ##     f.write('#Field  Chunk  l   b   slope\n')
+    ##     f.write(row)
+    ##     f.close()
 
     
 #plot plot plot
@@ -243,30 +268,43 @@ for i in range (nochunks):
 
 #Plot the APS on the left hand side of the figure
     ax=fig.add_axes([0.065,0.1,0.4,0.8])
+    #ax.set_autoscale_on(False)
 
     ax.set_xlabel('$\ell$',fontsize='medium' )
-    ee_lin,= ax.plot(bins_axis[nonzero_ee],ee_average[nonzero_ee],'r-',alpha=0.5)
-    ee_mark,= ax.plot(bins_axis[nonzero_ee],ee_average[nonzero_ee],'r|',markersize=8)
-    bb_lin,=ax.plot(bins_axis[nonzero_bb],bb_average[nonzero_bb],'b-',alpha=0.5)
-    bb_mark,=ax.plot(bins_axis[nonzero_bb],bb_average[nonzero_bb],'b|',markersize=8)
+    ee_lin,= ax.plot(bins_axis[nonzero_ee],ee_average[nonzero_ee],'r-',alpha=0.4)
+    ee_mark,= ax.plot(bins_axis[nonzero_ee],ee_average[nonzero_ee],'ro',markersize=4)
+    bb_lin,=ax.plot(bins_axis[nonzero_bb],bb_average[nonzero_bb],'b-',alpha=0.4)
+    bb_mark,=ax.plot(bins_axis[nonzero_bb],bb_average[nonzero_bb],'bo',markersize=4)
+    
+    #eefitlin = ax.plot(bins_axis[nonzero_ee],apsfit_ee(bins_axis[nonzero_ee],pfit_ee[0],pfit_ee[1],pfit_ee[2]), 'r-')
+    #bbfitlin = ax.plot(bins_axis[nonzero_bb],apsfit_bb(bins_axis[nonzero_bb],pfit_bb[0],pfit_bb[1],pfit_bb[2]), 'b-')
+    #ebfitlin = ax.plot(bins_axis[nz],apsfit_eb(bins_axis[nz],pfit_eb[0],pfit_eb[1],pfit_eb[2]), 'k-')
+
+    #power_law,= ax.plot(bins_axis[30:70],10**(slope*(np.log10(bins_axis[30:70])-np.log10(bins_axis[50]))+offset),'k-',linewidth=0.8)
 
 
-    power_law,= ax.plot(bins_axis[30:70],10**(slope*(np.log10(bins_axis[30:70])-np.log10(bins_axis[50]))+offset),'k-',linewidth=0.8)
+    beam_cut =ax.axvline(x=180/(3.5/60.),color='k',linestyle='dashed',alpha=0.8)
 
+    ax.axvline(x=506.,color='k',linestyle='dotted',alpha=0.6)
+    ax.axvline(x=1012.,color='k',linestyle='dotted',alpha=0.6)
+    ax.axvline(x=2003.,color='k',linestyle='dotted',alpha=0.6)
+    ax.axvline(x=2995.,color='k',linestyle='dotted',alpha=0.6)
 
-    beam_cut =ax.axvline(x=180/(3.5/60.),color='k',linestyle='dotted',alpha=0.7)
+    #axis limits to ensure consistent plots across fields
+    #N2 ylims
+    #ax.set_ylim(1E-5,10)
 
-    #ax.set_ylim(1E-6,10)
-    ax.set_xlim(10,20000.) 
+    
+    #ax.set_xlim(90.,4007.) 
 
     ax.set_ylabel('$C_{\ell}[K^2]$',fontsize='medium')
     ax.tick_params(labelsize='small')
-    ax.legend([(ee_lin,ee_mark),(bb_lin,bb_mark),power_law,beam_cut],["EE","BB",pwr_label,"beamwidth scale"],fontsize='small')
+    ax.legend([(ee_mark),(bb_mark),beam_cut],["EE","BB","beamwidth scale"],fontsize='medium',loc=3)
     ax.set_xscale('log') 
     ax.set_yscale('log')
 
 
 
-    fig.savefig("/Users/leclercq/galfacts/aps/plots/v4.2/"+field+"_apsv4.2_dqa3.1.2_c"+str(i)+".pdf",dpi=100)
+    fig.savefig("/Users/leclercq/galfacts/aps/plots/v5/"+field+"_apsv5_noise_dqa3.1.2_c"+str(i)+".pdf",dpi=200)
 
 #plt.show()

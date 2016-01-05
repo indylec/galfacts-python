@@ -16,6 +16,7 @@ map_header=hdu_in[0].header
 map_header['EQUINOX']=2000.00
 #machinery for new header#
 
+#map_header.remove('NAXIS3')
 map_header.remove('ctype3')
 map_header.remove('crval3')
 map_header.remove('crpix3')

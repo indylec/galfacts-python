@@ -26,6 +26,10 @@ synrm_in='/Users/leclercq/galfacts/aps/rm/S1_4_syn_rm.fits'
 
 rmtf_in='/Users/leclercq/galfacts/aps/rm/GALFACTS_S1_dicube.txt'
 
+rm_in='/Users/leclercq/galfacts/3.1.2/fits_files/rm/GALFACTS_S1_RM.fits'
+
+angle_in='/Users/leclercq/galfacts/3.1.2/fits_files/rm/GALFACTS_S1_angle.fits'
+
 weights=np.loadtxt(weights_in)
 goodch=np.nonzero(weights)[0]
 
@@ -34,8 +38,16 @@ rmtf_abs=np.sqrt(rmtf_re**2+rmtf_im**2)
 
 print "Getting fits data"
 
+rm=fits.getdata(rm_in)
+cuberm=rm[y_pix,x_pix]
+print cuberm
+
+angle0=fits.getdata(angle_in)
+cubeangle=angle0[y_pix,x_pix]
+print cubeangle
+
 synrm=fits.getdata(synrm_in)
-synrm=synrm[:,0:895]
+synrm=synrm[800:,0:895]
 synrm=synrm[y_pix_im,x_pix_im]
 
 qcube=fits.getdata(q_in)
@@ -77,7 +89,7 @@ l2g=l2[goodch]
 qg=qlos[goodch]
 ug=ulos[goodch]
 rmangg=rm_angle[goodch]
-print rmangg
+#print rmangg
 
 print"done. Plotting!"
 
@@ -102,6 +114,7 @@ ax1a.xaxis.set_major_locator(MaxNLocator(prune='both'))
 
 ax1b=ax1a.twinx()
 angline=ax1b.plot(l2g,rmangg,'r-',alpha=0.7,linewidth=5)
+fitline=ax1b.plot(l2g,cuberm*l2g+cubeangle,'k-',linewidth=5)
 ax1b.set_ylabel('$\Psi [\mathrm{rad}]$', fontsize=40)
 ax1b.tick_params(labelsize=22)
 
@@ -109,20 +122,20 @@ ax1b.tick_params(labelsize=22)
 
 ax2.plot(phi_range,phi_los,'k-',linewidth=5)
 ax2.set_ylabel('$|\mathrm{F}(\phi)|[\mathrm{K}]$',fontsize=35)
-ax2.set_xlabel('$\phi[\mathrm{rad}/\mathrm{m}^2}]$', fontsize=40)
+ax2.set_xlabel('$\phi[\mathrm{rad}/\mathrm{m}^2]$', fontsize=40)
 ax2.tick_params(labelsize=22)
 ax2.xaxis.set_major_locator(MaxNLocator(prune='both'))
 
 
 ax3.plot(phi_range,rmtf_abs,'b-',linewidth=5)
 ax3.set_ylabel('$|\mathrm{R}(\phi)|$',fontsize=35)
-ax3.set_xlabel('$\phi[\mathrm{rad}/\mathrm{m}^2}]$', fontsize=40)
+ax3.set_xlabel('$\phi[\mathrm{rad}/\mathrm{m}^2]$', fontsize=40)
 ax3.yaxis.set_label_position('right')
 ax3.yaxis.tick_right()
 ax3.tick_params(labelsize=22)
 ax3.xaxis.set_major_locator(MaxNLocator(prune='both'))
 
-fig.savefig("/Users/leclercq/galfacts/aps/rm/S1_"+str(x_pix)+"_"+str(y_pix)+"_plot.png",dpi=300,bbox_inches="tight")
+fig.savefig("/Users/leclercq/galfacts/aps/rm/S1_"+str(x_pix)+"_"+str(y_pix)+"v2_plot.png",dpi=300,bbox_inches="tight")
 
 
 

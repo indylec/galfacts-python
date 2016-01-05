@@ -243,30 +243,41 @@ for i in range (nochunks):
 
 #Plot the APS on the left hand side of the figure
     ax=fig.add_axes([0.065,0.1,0.4,0.8])
+    #ax.set_autoscale_on(False)
 
     ax.set_xlabel('$\ell$',fontsize='medium' )
     ee_lin,= ax.plot(bins_axis[nonzero_ee],ee_average[nonzero_ee],'r-',alpha=0.5)
     ee_mark,= ax.plot(bins_axis[nonzero_ee],ee_average[nonzero_ee],'r|',markersize=8)
     bb_lin,=ax.plot(bins_axis[nonzero_bb],bb_average[nonzero_bb],'b-',alpha=0.5)
     bb_mark,=ax.plot(bins_axis[nonzero_bb],bb_average[nonzero_bb],'b|',markersize=8)
+    
 
 
     power_law,= ax.plot(bins_axis[30:70],10**(slope*(np.log10(bins_axis[30:70])-np.log10(bins_axis[50]))+offset),'k-',linewidth=0.8)
 
 
-    beam_cut =ax.axvline(x=180/(3.5/60.),color='k',linestyle='dotted',alpha=0.7)
+    beam_cut =ax.axvline(x=180/(3.5/60.),color='k',linestyle='dashed',alpha=0.9)
 
-    #ax.set_ylim(1E-6,10)
-    ax.set_xlim(10,20000.) 
+    ax.axvline(x=506.,color='k',linestyle='dotted',alpha=0.6)
+    ax.axvline(x=1012.,color='k',linestyle='dotted',alpha=0.6)
+    ax.axvline(x=2003.,color='k',linestyle='dotted',alpha=0.6)
+    ax.axvline(x=2995.,color='k',linestyle='dotted',alpha=0.6)
+
+    #axis limits to ensure consistent plots across fields
+    #N2 ylims
+    ax.set_ylim(1E-5,10)
+
+    
+    ax.set_xlim(90.,4007.) 
 
     ax.set_ylabel('$C_{\ell}[K^2]$',fontsize='medium')
     ax.tick_params(labelsize='small')
-    ax.legend([(ee_lin,ee_mark),(bb_lin,bb_mark),power_law,beam_cut],["EE","BB",pwr_label,"beamwidth scale"],fontsize='small')
+    ax.legend([(ee_lin,ee_mark),(bb_lin,bb_mark),power_law,beam_cut],["EE","BB",pwr_label,"beamwidth scale"],fontsize='medium')
     ax.set_xscale('log') 
     ax.set_yscale('log')
 
 
 
-    fig.savefig("/Users/leclercq/galfacts/aps/plots/v4.2/"+field+"_apsv4.2_dqa3.1.2_c"+str(i)+".pdf",dpi=100)
+    fig.savefig("/Users/leclercq/galfacts/aps/plots/v5/"+field+"_apsv5_dqa3.1.2_c"+str(i)+".pdf",dpi=200)
 
 #plt.show()
