@@ -265,8 +265,10 @@ for i in range (nochunks):
 
     #axis limits to ensure consistent plots across fields
     #N2 ylims
-    ax.set_ylim(1E-5,10)
+    #ax.set_ylim(1E-5,10)
 
+    #S2 ylims
+    ax.set_ylim(1E-7,10)
     
     ax.set_xlim(90.,4007.) 
 

@@ -1,6 +1,6 @@
 #/Users/leclercq/miniconda/bin/python
 
-#This is the code that caluclates the APS of a given Q and U field. It divides the field up into chunks of a given width, pads to the nearest power of 2, and does the 2D FT. The output displays: 1D aps for EE, BB, 2D EE and BB, Q, U and P. Current fit implementation is a simple linear fit of the 1D C_l vs. ell but this will change shortly once we figure out how to describe the noise.
+#This is the code that caluclates the APS of a given Q and U field. It divides the field up into chunks of a given width, pads to the nearest power of 2, and does the 2D FT. The output displays: 1D aps for QQ, UU, 2D QQ and UU, Q, U and P. Current fit implementation is a simple linear fit of the 1D C_l vs. ell but this will change shortly once we figure out how to describe the noise.
 
 import numpy as np 
 import matplotlib
@@ -163,24 +163,27 @@ def chunk_fts(q_im,u_im,clims_pix_y,clims_pix_x,width,ft_taper,pad,i,area_width,
     
 #Calculate E and B mode functions
 
-    emode=qft_final*np.cos(2.*phi_ell)+uft_final*np.sin(2.*phi_ell)
-    bmode=-qft_final*np.sin(2.*phi_ell)+uft_final*np.cos(2.*phi_ell)
+    #emode=qft_final*np.cos(2.*phi_ell)+uft_final*np.sin(2.*phi_ell)
+    #bmode=-qft_final*np.sin(2.*phi_ell)+uft_final*np.cos(2.*phi_ell)
+
+#Calculate QQ and UU functions
 
 #Divide out beam
     if beam == True:
-        emode=emode/ft_beam
-        bmode=bmode/ft_beam
+        qft_final=qft_final/ft_beam
+        uft_final=uft_final/ft_beam
 
 
 #compute correlations (EE,BB)
-    ee=np.abs(emode)**2
-    bb=np.abs(bmode)**2
+    qq=qft_final*np.conj(qft_final)
+    uu=uft_final*np.conj(uft_final)
+    
 
 #account for size of array:
-    ee_scaled=ee*area_width/1024**2
-    bb_scaled=bb*area_width/1024**2
+    qq_scaled=qq*area_width/1024**2
+    uu_scaled=uu*area_width/1024**2
 
-    return ee_scaled, bb_scaled
+    return qq_scaled, uu_scaled
 
     
 #Bin the C_l for E and B to calculate radial average
@@ -290,19 +293,24 @@ def plot_all(q_in, u_in, pol_in, w, center_pix_x, center_pix_y, width_deg, bins_
     #ax.set_ylim(1E-5,10)
 
     #S2 ylims
+    #s2_ymin=1E-7
+    #s2_ymax=10.
+    #ax1.set_ylim(s2_ymin,s2_ymax)
+
+    #noise Ylims
     s2_ymin=1E-7
-    s2_ymax=10.
+    s2_ymax=1E-3
     ax1.set_ylim(s2_ymin,s2_ymax)
     
     #ax1.set_xlim(90.,4007.) 
 
     ax1.set_ylabel('$C_{\ell}[K^2]$',fontsize='medium')
     ax1.tick_params(labelsize='small')
-    ax1.legend([(ee_mark),(bb_mark),beam_cut],["EE","BB","beamwidth scale"],fontsize='medium',loc=0)
+    ax1.legend([(ee_mark),(bb_mark),beam_cut],["QQ","UU","beamwidth scale"],fontsize='medium',loc=0)
     ax1.set_xscale('log') 
     ax1.set_yscale('log')
 
-    #Plot 2D EE top middle
+    #Plot 2D QQ top middle
     ax2=fig.add_axes([0.33,0.55,0.35,0.40])
 
     from matplotlib.patches import Circle
@@ -337,7 +345,7 @@ def plot_all(q_in, u_in, pol_in, w, center_pix_x, center_pix_y, width_deg, bins_
     cbar1.ax.tick_params(labelsize=7)
 
     ax2.text(12,32,'circles at $\ell$ = '+circ1+', '+circ2+', '+circ3+', '+circ4+', '+circ5,fontsize=7)
-    ax2.text(12,450,'EE')
+    ax2.text(12,450,'QQ')
 
     ax2.add_artist(d)
     ax2.add_artist(e)
@@ -378,7 +386,7 @@ def plot_all(q_in, u_in, pol_in, w, center_pix_x, center_pix_y, width_deg, bins_
     cbar2.ax.tick_params(labelsize=7)
 
     ax3.text(12,32,'circles at $\ell$ = '+circ1+', '+circ2+', '+circ3+', '+circ4+', '+circ5,fontsize=7)
-    ax3.text(12,450,'BB')
+    ax3.text(12,450,'UU')
 
     ax3.add_artist(d1)
     ax3.add_artist(e1)
@@ -395,9 +403,9 @@ def plot_all(q_in, u_in, pol_in, w, center_pix_x, center_pix_y, width_deg, bins_
 
 
     if beam == True:
-        fig.savefig("/Users/leclercq/galfacts/aps/plots/v6/"+field+"_apsv6_all_removed_beam_dqa3.1.2_c"+str(i)+".pdf",dpi=200, bbox_inches='tight')
+        fig.savefig("/Users/leclercq/galfacts/aps/plots/v6/"+field+"_qq_apsv6_removed_beam_dqa3.1.2_c"+str(i)+".pdf",dpi=200, bbox_inches='tight')
     else:
-        fig.savefig("/Users/leclercq/galfacts/aps/plots/v6/"+field+"_apsv6_all_dqa3.1.2_c"+str(i)+".pdf",dpi=200, bbox_inches='tight')
+        fig.savefig("/Users/leclercq/galfacts/aps/plots/v6/"+field+"_qq_apsv6_dqa3.1.2_c"+str(i)+".pdf",dpi=200, bbox_inches='tight')
 
 
 ##############    START OF MAIN PROGRAM    ################
@@ -430,7 +438,7 @@ ell_r, ell_hist, phi_ell, bins_axis, ft_beam, ft_taper, phi_ell, bins = fft_prep
 #Iterate over chunks
 
 for i in range (nochunks):
-    ee_scaled, bb_scaled = chunk_fts(q_im, u_im, clims_pix_y, clims_pix_x, width, ft_taper, pad, i, area_width, beam)
+    ee_scaled, bb_scaled = chunk_fts(q_im, u_im, clims_pix_y, clims_pix_x, width, ft_taper, pad, i, area_width)
 
     ee_average, nonzero_ee, bb_average, nonzero_bb, eb, nz = binning(ee_scaled, bb_scaled, ell_r, bins)
 

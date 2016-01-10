@@ -1,6 +1,6 @@
 #/Users/leclercq/miniconda/bin/python
 
-#This is the code that caluclates the APS of a given Q and U field. It divides the field up into chunks of a given width, pads to the nearest power of 2, and does the 2D FT. The output displays: 1D aps for EE, BB, 2D EE and BB, Q, U and P. Current fit implementation is a simple linear fit of the 1D C_l vs. ell but this will change shortly once we figure out how to describe the noise.
+#This is the code that caluclates the APS of a given Q and U field. It divides the field up into chunks of a given width, pads to the nearest power of 2, and does the 2D FT. The output displays: 1D aps for QQ, UU, 2D QQ and UU, Q, U and P. We then mask out the bow-tie cut, corresponding to the striping noise, and do the radial averaging to try and figureout what, if any, scaling relation there is between the QQ and UU components.
 
 import numpy as np 
 import matplotlib
@@ -11,6 +11,7 @@ import aplpy
 import gaussbeam
 import sys
 from numpy import pi
+from numpy import ma
 from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
@@ -46,7 +47,7 @@ def apodize(na,nb,radius):
 
 
 # first step is to get images and import header and data into numpy arrays
-def import_qu(q_in,u_in):
+def import_qu(q_in,u_in, qn_in, un_in):
     q_hdu=fits.open(q_in) 
     q_im=q_hdu[0].data
 
@@ -55,19 +56,35 @@ def import_qu(q_in,u_in):
 
     q_head=q_hdu[0].header
 
-    xw=q_head['NAXIS1']
-    yw=q_head['NAXIS2']
-
     u_hdu=fits.open(u_in) 
     u_im=u_hdu[0].data
 
     if len(u_im.shape) == 3:
         u_im=u_im[0,:,:]
 
-    u_head=u_hdu[0].header
-    
+    qn_hdu=fits.open(qn_in) 
+    qn_im=qn_hdu[0].data
 
-    #get WCS object from pol. map
+    if len(qn_im.shape) == 3:
+        qn_im=qn_im[0,:,:]
+
+    qn_head=qn_hdu[0].header
+
+    un_hdu=fits.open(un_in) 
+    un_im=un_hdu[0].data
+
+    if len(un_im.shape) == 3:
+        un_im=un_im[0,:,:]
+
+    un_head=un_hdu[0].header
+    
+    xw=q_head['NAXIS1']
+    yw=q_head['NAXIS2']
+
+    xnw=qn_head['NAXIS1']
+    ynw=qn_head['NAXIS2']
+
+   #get WCS object from pol. map
 
     w=WCS(pol_in)
 
@@ -79,10 +96,10 @@ def import_qu(q_in,u_in):
     u_nan=np.where(np.isnan(u_im))
     u_im[u_nan]=0.0
 
-    return q_im, u_im, xw, yw, w
+    return q_im, u_im, qn_im, un_im, xw, yw, xnw, ynw, w
 
 #Divide images into chunks
-def make_chunks(width, xw, yw):
+def make_chunks(width, xw, yw, xnw, ynw):
     nochunks=int(xw/width)
     xcrop=int((xw-width*nochunks)/2.)
     ycrop=int((yw-width)/2.)
@@ -95,7 +112,17 @@ def make_chunks(width, xw, yw):
     center_pix_x=np.arange(nochunks)*width+(xcrop)+width/2.
     center_pix_y=np.ones(nochunks)*(yw/2)
 
-    return clims_pix_x,clims_pix_y,center_pix_x,center_pix_y,pad,nochunks
+    nochunks_n=int(xnw/width)
+    xcrop_n=int((xnw-width*nochunks_n)/2.)
+    ycrop_n=int((ynw-width)/2.)
+
+    clims_pix_xn=np.arange(nochunks_n)*width+xcrop_n
+    clims_pix_yn=np.ones(nochunks_n)*ycrop_n
+
+    center_pix_xn=np.arange(nochunks_n)*width+(xcrop_n)+width/2.
+    center_pix_yn=np.ones(nochunks_n)*(ynw/2)
+
+    return clims_pix_x,clims_pix_y,center_pix_x,center_pix_y,clims_pix_xn,clims_pix_yn,center_pix_xn,center_pix_yn,pad,nochunks, nochunks_n
 
 
 #prepare for FFTs
@@ -112,17 +139,28 @@ def fft_prep(width, pixstep):
 
     #define radii of constant ell
     ell_r=np.sqrt((ellx)**2+(elly)**2)
-    ell_ref=ell_r
-    ell_max=np.max(ell_ref)
+
+    xm=ym=np.arange(1024)
+    Xm,Ym=np.meshgrid(xm,ym)
+    Ym=Ym.astype('f')
+    Xm=Xm.astype('f')
+
+    xyrad=np.sqrt((Xm-512)**2+(Ym-512)**2)
+    
+    ell_cut=ma.masked_where((xyrad>48) & (np.abs((Ym-512)/(Xm-512))<np.abs(np.tan(np.pi/12.))),ell_r)
+    
+    ell_max=np.max(ell_cut)
 
     #set up grid of phis
     phi_ell=np.arctan2(elly,ellx)
+    phi_cut=ma.masked_where((xyrad>48) & (np.abs((Ym-512)/(Xm-512))<np.abs(np.tan(np.pi/12.))),phi_ell)
 
     #Make ell bins, log-spaced, and bin ells
     bins=np.logspace(np.log10(10.0),np.log10(ell_max),100).astype(np.uint64)
     ell_scale=bins*(bins+1)/2.*pi
     #print "ell bins:", bins
     ell_hist=np.histogram(ell_r,bins)[0]
+    ell_hist_cut=np.histogram(ell_cut.compressed(),bins)[0]
 
     #axis stuff for plots
     bins_center=np.zeros((bins.size)-1)
@@ -137,7 +175,7 @@ def fft_prep(width, pixstep):
     ft_beam=gaussbeam.makeFTgaussian(1024,fwhm=3.5)
     #ft_beam_sq=np.abs(ft_beam)**2
 
-    return ell_r, ell_hist, phi_ell, bins_axis, ft_beam, ft_taper,phi_ell,bins
+    return ell_r, ell_hist, ell_cut, ell_hist_cut,  phi_ell, phi_cut, bins_axis, ft_beam, ft_taper,phi_ell,bins
 
 
 
@@ -163,50 +201,106 @@ def chunk_fts(q_im,u_im,clims_pix_y,clims_pix_x,width,ft_taper,pad,i,area_width,
     
 #Calculate E and B mode functions
 
-    emode=qft_final*np.cos(2.*phi_ell)+uft_final*np.sin(2.*phi_ell)
-    bmode=-qft_final*np.sin(2.*phi_ell)+uft_final*np.cos(2.*phi_ell)
+    #emode=qft_final*np.cos(2.*phi_ell)+uft_final*np.sin(2.*phi_ell)
+    #bmode=-qft_final*np.sin(2.*phi_ell)+uft_final*np.cos(2.*phi_ell)
+
+#Calculate QQ and UU functions
 
 #Divide out beam
     if beam == True:
-        emode=emode/ft_beam
-        bmode=bmode/ft_beam
+        qft_final=qft_final/ft_beam
+        uft_final=uft_final/ft_beam
 
 
 #compute correlations (EE,BB)
-    ee=np.abs(emode)**2
-    bb=np.abs(bmode)**2
+    qq=qft_final*np.conj(qft_final)
+    uu=uft_final*np.conj(uft_final)
+    
 
 #account for size of array:
-    ee_scaled=ee*area_width/1024**2
-    bb_scaled=bb*area_width/1024**2
+    qq_scaled=qq*area_width/1024**2
+    uu_scaled=uu*area_width/1024**2
 
-    return ee_scaled, bb_scaled
+#mask out the striping features
+
+    xm=ym=np.arange(1024)
+    Xm,Ym=np.meshgrid(xm,ym)
+    Ym=Ym.astype('f')
+    Xm=Xm.astype('f')
+
+    xyrad=np.sqrt((Xm-512)**2+(Ym-512)**2)
+    
+    qq_scaled_ma=ma.masked_where((xyrad>48) & (np.abs((Ym-512)/(Xm-512))<np.abs(np.tan(np.pi/12.))),qq_scaled)
+    uu_scaled_ma=ma.masked_where((xyrad>48) & (np.abs((Ym-512)/(Xm-512))<np.abs(np.tan(np.pi/12.))),uu_scaled)
+
+    
+
+    return qq_scaled, uu_scaled, qq_scaled_ma, uu_scaled_ma
 
     
 #Bin the C_l for E and B to calculate radial average
-def binning(ee_scaled, bb_scaled, ell_r, bins):    
-    ee_hist=np.histogram(ell_r,bins,weights=ee_scaled)[0]
+def binning(ee_scaled, bb_scaled, ell_r, ell_hist, bins, bins_axis):
+    print np.shape(ee_scaled.compressed()), np.shape(ell_r.compressed())   
+    ee_hist=np.histogram(ell_r.compressed(),bins,weights=ee_scaled.compressed())[0]
     ee_average=np.zeros(ee_hist.size)
     nonzero_ee=np.where(ee_hist!=0)
+    #print ee_hist.shape, ell_hist.shape,ell_hist,nonzero_ee
     ee_average[nonzero_ee]=ee_hist[nonzero_ee]/ell_hist[nonzero_ee]
 
     #print ee_average[0:30]
 
-    bb_hist=np.histogram(ell_r,bins,weights=bb_scaled)[0]
+    bb_hist=np.histogram(ell_r.compressed(),bins,weights=bb_scaled.compressed())[0]
     bb_average=np.zeros(bb_hist.size)
     nonzero_bb=np.where(bb_hist!=0)
     bb_average[nonzero_bb]=bb_hist[nonzero_bb]/ell_hist[nonzero_bb]
 
     nz=np.intersect1d(nonzero_ee,nonzero_bb)
 
-    print "There are are ",nz.shape,"nonzero elements with the same index"
+    #print "There are are ",nz.shape,"nonzero elements with the same index"
 
     eb=(ee_average[nz]+bb_average[nz])/2.
 
-    return ee_average, nonzero_ee, bb_average, nonzero_bb, eb, nz
+    ez=ee_average[nz]
+    bz=bb_average[nz]
+
+    bins_z=bins_axis[nz]
+    
+
+    qu_ratio=np.mean(ez[49:59]/bz[49:59])
+
+    #print "Q/U ratio around ell=",bins_z[55],"is ",qu_ratio
+
+    return ez, bz, nz, bins_z
+
+
+#Figure out the appropriate noise scaling
+def noise_scale(qq_scaled_ma, uu_scaled_ma, qqnoise_scaled_ma, qz, uz, qnz, bins_z):
+
+    #below_beam=np.where(bins_z>180/(3.5/60.))
+    #print below_beam
+
+    q_noise_ratio=np.mean(qz[60:71]/qnz[60:71])
+    print q_noise_ratio
+    u_noise_ratio=np.mean(uz[60:71]/qnz[60:71])
+    print u_noise_ratio
+
+    qu_ratio=q_noise_ratio/u_noise_ratio
+
+    q_scaled_noise=qnz*q_noise_ratio
+    u_scaled_noise=qnz*u_noise_ratio
+    
+    qq_average_nonoise=qz-q_scaled_noise
+
+    qq_nonoise=qq_scaled_ma-(qqnoise_scaled_ma*q_noise_ratio)
+
+    uu_average_nonoise=uz-u_scaled_noise
+
+    uu_nonoise=uu_scaled_ma-(qqnoise_scaled_ma*u_noise_ratio)
+
+    return qq_nonoise,uu_nonoise,qq_average_nonoise,uu_average_nonoise,q_scaled_noise,u_scaled_noise, qu_ratio
 
 #plot plot plot
-def plot_all(q_in, u_in, pol_in, w, center_pix_x, center_pix_y, width_deg, bins_axis, ee_average, bb_average, nonzero_ee, nonzero_bb, i, field, beam):
+def plot_all(q_in, u_in, pol_in, w, center_pix_x, center_pix_y, width_deg, bins_z, qz, uz, qz_nonoise, uz_nonoise, qnz, q_scaled_noise, u_scaled_noise, qq_scaled_ma, qq_nonoise, chunk, field, beam, qu_ratio):
 
     fig=plt.figure(figsize=(22,7))
     #title='APS of GALFACTS 3.1.2 field '+field
@@ -222,7 +316,7 @@ def plot_all(q_in, u_in, pol_in, w, center_pix_x, center_pix_y, width_deg, bins_
     f1.axis_labels.hide()
     f1.tick_labels.hide()
     f1.show_colorscale(cmap='afmhot')
-    x_coord,y_coord=f1.pixel2world(center_pix_x[i],center_pix_y[i])
+    x_coord,y_coord=f1.pixel2world(center_pix_x[chunk],center_pix_y[chunk])
     f1.recenter(x_coord,y_coord,width=width_deg,height=width_deg)
     f1.add_colorbar()
     f1.colorbar.set_font(size='x-small')
@@ -237,7 +331,7 @@ def plot_all(q_in, u_in, pol_in, w, center_pix_x, center_pix_y, width_deg, bins_
     f2.axis_labels.hide()
     f2.tick_labels.hide()
     f2.show_colorscale(cmap='afmhot')
-    x_coord,y_coord=f2.pixel2world(center_pix_x[i],center_pix_y[i])
+    x_coord,y_coord=f2.pixel2world(center_pix_x[chunk],center_pix_y[chunk])
     f2.recenter(x_coord,y_coord,width=width_deg,height=width_deg)
     f2.add_colorbar()
     f2.colorbar.set_font(size='x-small')
@@ -252,7 +346,7 @@ def plot_all(q_in, u_in, pol_in, w, center_pix_x, center_pix_y, width_deg, bins_
     f3.axis_labels.hide()
     f3.tick_labels.hide()
     f3.show_colorscale(cmap='afmhot')
-    x_coord,y_coord=f3.pixel2world(center_pix_x[i],center_pix_y[i])
+    x_coord,y_coord=f3.pixel2world(center_pix_x[chunk],center_pix_y[chunk])
     f3.recenter(x_coord,y_coord,width=width_deg,height=width_deg)
     f3.add_colorbar()
     f3.colorbar.set_font(size='x-small')
@@ -266,10 +360,18 @@ def plot_all(q_in, u_in, pol_in, w, center_pix_x, center_pix_y, width_deg, bins_
     #ax.set_autoscale_on(False)
 
     ax1.set_xlabel('$\ell$',fontsize='medium' )
-    ee_lin,= ax1.plot(bins_axis[nonzero_ee],ee_average[nonzero_ee],'r-',alpha=0.4)
-    ee_mark,= ax1.plot(bins_axis[nonzero_ee],ee_average[nonzero_ee],'ro',markersize=4)
-    bb_lin,=ax1.plot(bins_axis[nonzero_bb],bb_average[nonzero_bb],'b-',alpha=0.4)
-    bb_mark,=ax1.plot(bins_axis[nonzero_bb],bb_average[nonzero_bb],'bo',markersize=4)
+    #qz_lin,= ax1.plot(bins_z,qz,'r-',alpha=0.4)
+    #qz_mark,= ax1.plot(bins_z,qz,'ro',markersize=3)
+    #uz_lin,=ax1.plot(bins_z,uz,'b-',alpha=0.4)
+    #uz_mark,=ax1.plot(bins_z,uz,'bo',markersize=3)
+    qz_nonoise_lin,=ax1.plot(bins_z,qz_nonoise,'r-',alpha=0.4)
+    qz_nonoise_mark,=ax1.plot(bins_z,qz_nonoise,'r^',markersize=3)
+    uz_nonoise_lin,=ax1.plot(bins_z,uz_nonoise,'b-',alpha=0.4)
+    uz_nonoise_mark,=ax1.plot(bins_z,uz_nonoise,'b^',markersize=3)
+    q_scaled_noise_lin,=ax1.plot(bins_z,q_scaled_noise,'g-', alpha=0.4)
+    #q_scaled_noise_mark,=ax1.plot(bins_z,q_scaled_noise,'gd', markersize=3)
+    u_scaled_noise_lin,=ax1.plot(bins_z,u_scaled_noise,'g-', alpha=0.4)
+    #u_scaled_noise_mark,=ax1.plot(bins_z,u_scaled_noise,'gD', markersize=3)
     
     #eefitlin = ax.plot(bins_axis[nonzero_ee],apsfit_ee(bins_axis[nonzero_ee],pfit_ee[0],pfit_ee[1],pfit_ee[2]), 'r-')
     #bbfitlin = ax.plot(bins_axis[nonzero_bb],apsfit_bb(bins_axis[nonzero_bb],pfit_bb[0],pfit_bb[1],pfit_bb[2]), 'b-')
@@ -278,7 +380,7 @@ def plot_all(q_in, u_in, pol_in, w, center_pix_x, center_pix_y, width_deg, bins_
     #power_law,= ax.plot(bins_axis[30:70],10**(slope*(np.log10(bins_axis[30:70])-np.log10(bins_axis[50]))+offset),'k-',linewidth=0.8)
 
 
-    beam_cut =ax1.axvline(x=180/(3.5/60.),color='k',linestyle='dashed',alpha=0.8)
+    beam_cut = ax1.axvline(x=180/(3.5/60.),color='k',linestyle='dashed',alpha=0.8)
 
     ax1.axvline(x=506.,color='k',linestyle='dotted',alpha=0.6)
     ax1.axvline(x=1012.,color='k',linestyle='dotted',alpha=0.6)
@@ -290,19 +392,21 @@ def plot_all(q_in, u_in, pol_in, w, center_pix_x, center_pix_y, width_deg, bins_
     #ax.set_ylim(1E-5,10)
 
     #S2 ylims
-    s2_ymin=1E-7
-    s2_ymax=10.
+    s2_ymin=1E-9
+    s2_ymax=2.
     ax1.set_ylim(s2_ymin,s2_ymax)
     
     #ax1.set_xlim(90.,4007.) 
 
     ax1.set_ylabel('$C_{\ell}[K^2]$',fontsize='medium')
     ax1.tick_params(labelsize='small')
-    ax1.legend([(ee_mark),(bb_mark),beam_cut],["EE","BB","beamwidth scale"],fontsize='medium',loc=0)
+    #ax1.legend([(qz_mark,qz_lin),(uz_mark,uz_lin),(qz_nonoise_mark,qz_nonoise_lin),(uz_nonoise_mark,uz_nonoise_lin),q_scaled_noise_lin,u_scaled_noise_lin,beam_cut],["QQ","UU","QQ-noise","UU-noise","QQ noise power","UU noise power","beamwidth scale"],fontsize='medium',loc=0)
+    ax1.legend([(qz_nonoise_mark,qz_nonoise_lin),(uz_nonoise_mark,uz_nonoise_lin),beam_cut],["QQ-noise","UU-noise","beamwidth scale"],fontsize='medium',loc=0)
     ax1.set_xscale('log') 
     ax1.set_yscale('log')
+    ax1.text(30, 1E-6, '$Q/U$ noise ratio = {:.2f} '.format(qu_ratio))
 
-    #Plot 2D EE top middle
+    #Plot 2D QQ top middle
     ax2=fig.add_axes([0.33,0.55,0.35,0.40])
 
     from matplotlib.patches import Circle
@@ -331,13 +435,13 @@ def plot_all(q_in, u_in, pol_in, w, center_pix_x, center_pix_y, width_deg, bins_
     circ4=str(int(ell_r[512,512+142]))
     circ5=str(int(ell_r[512,512+190]))
 
-    im1=ax2.imshow(np.log10(np.abs(ee_scaled))[256:768,256:768], clim=(np.log10(s2_ymin),np.log10(s2_ymax)))
+    im1=ax2.imshow(np.log10(np.abs(qq_scaled_ma))[256:768,256:768], clim=(np.log10(s2_ymin),np.log10(s2_ymax)))
     cbar1=plt.colorbar(mappable=im1, ax=ax2)
     cbar1.set_label('$\mathrm{log}_{10} \; C_{\ell} [\mathrm{K}^2]$',size=12)
     cbar1.ax.tick_params(labelsize=7)
 
     ax2.text(12,32,'circles at $\ell$ = '+circ1+', '+circ2+', '+circ3+', '+circ4+', '+circ5,fontsize=7)
-    ax2.text(12,450,'EE')
+    ax2.text(12,450,'QQ-noise')
 
     ax2.add_artist(d)
     ax2.add_artist(e)
@@ -372,13 +476,13 @@ def plot_all(q_in, u_in, pol_in, w, center_pix_x, center_pix_y, width_deg, bins_
     g1.set_alpha(0.5)
     h1.set_alpha(0.5)
 
-    im2=ax3.imshow(np.log10(np.abs(bb_scaled))[256:768,256:768], clim=(np.log10(s2_ymin),np.log10(s2_ymax)))
+    im2=ax3.imshow(np.log10(np.abs(qq_nonoise))[256:768,256:768], clim=(np.log10(s2_ymin),np.log10(s2_ymax)))
     cbar2=plt.colorbar(mappable=im2, ax=ax3)
     cbar2.set_label('$\mathrm{log}_{10} \; C_{\ell} [\mathrm{K}^2]$',size=12)
     cbar2.ax.tick_params(labelsize=7)
 
     ax3.text(12,32,'circles at $\ell$ = '+circ1+', '+circ2+', '+circ3+', '+circ4+', '+circ5,fontsize=7)
-    ax3.text(12,450,'BB')
+    ax3.text(12,450,'UU-noise')
 
     ax3.add_artist(d1)
     ax3.add_artist(e1)
@@ -395,9 +499,9 @@ def plot_all(q_in, u_in, pol_in, w, center_pix_x, center_pix_y, width_deg, bins_
 
 
     if beam == True:
-        fig.savefig("/Users/leclercq/galfacts/aps/plots/v6/"+field+"_apsv6_all_removed_beam_dqa3.1.2_c"+str(i)+".pdf",dpi=200, bbox_inches='tight')
+        fig.savefig("/Users/leclercq/galfacts/aps/plots/v6.1/"+field+str(chunk)+"S2c2_noise_subtraction_after_apsv6_removed_beam_dqa3.1.2.png",dpi=200, bbox_inches='tight')
     else:
-        fig.savefig("/Users/leclercq/galfacts/aps/plots/v6/"+field+"_apsv6_all_dqa3.1.2_c"+str(i)+".pdf",dpi=200, bbox_inches='tight')
+        fig.savefig("/Users/leclercq/galfacts/aps/plots/v6.1/"+field+str(chunk)+"S2c2_noise_subtraction_after_apsv6_dqa3.1.2.png",dpi=200, bbox_inches='tight')
 
 
 ##############    START OF MAIN PROGRAM    ################
@@ -405,11 +509,15 @@ def plot_all(q_in, u_in, pol_in, w, center_pix_x, center_pix_y, width_deg, bins_
 #input arguments
 q_in=sys.argv[1]
 u_in=sys.argv[2]
-pol_in=sys.argv[3]
+qnoise_in=sys.argv[3]
+unoise_in=sys.argv[4]
+pol_in=sys.argv[5]
 #latlon_out=sys.argv[4]
-field=sys.argv[4]
-width=int(sys.argv[5])
-beam=int(sys.argv[6]) #this needs to be either 1 or 0; setting it to one turns beam removal on
+field=sys.argv[6]
+width=int(sys.argv[7])
+beam=int(sys.argv[8]) #this needs to be either 1 or 0; setting it to one turns beam removal on
+#chunk=int(sys.argv[9]) 
+noise_chunk=int(sys.argv[9])
 
 #setting up some constants:
 #define pixel step and pixel area in rad
@@ -421,20 +529,39 @@ area_width=width*width*pixarea
 width_deg=width/60.
 
 
-q_im, u_im, xw, yw, w = import_qu(q_in, u_in)
+q_im, u_im, qnoise, unoise, xw, yw, xnw, ynw, w = import_qu(q_in, u_in, qnoise_in, unoise_in)
 
-clims_pix_x, clims_pix_y, center_pix_x, center_pix_y, pad, nochunks = make_chunks(width, xw, yw)
+clims_pix_x,clims_pix_y,center_pix_x,center_pix_y,clims_pix_xn,clims_pix_yn,center_pix_xn,center_pix_yn,pad,nochunks, nochunks_n = make_chunks(width, xw, yw, xnw, ynw)
 
-ell_r, ell_hist, phi_ell, bins_axis, ft_beam, ft_taper, phi_ell, bins = fft_prep(width, pixstep)
+ell_r, ell_hist, ell_cut, ell_hist_cut, phi_ell, phi_cut, bins_axis, ft_beam, ft_taper, phi_ell, bins = fft_prep(width, pixstep)
 
-#Iterate over chunks
+#Work on selected noise chunk
+
+qqnoise_scaled, uunoise_scaled, qqnoise_scaled_ma, uunoise_scaled_ma = chunk_fts(qnoise, unoise, clims_pix_yn, clims_pix_xn, width, ft_taper, pad, noise_chunk, area_width, beam)
+
+qnz,unz,nnz,bins_nz = binning(qqnoise_scaled_ma, uunoise_scaled_ma, ell_cut, ell_hist_cut, bins, bins_axis)
+
+#Loop over map chunks
 
 for i in range (nochunks):
-    ee_scaled, bb_scaled = chunk_fts(q_im, u_im, clims_pix_y, clims_pix_x, width, ft_taper, pad, i, area_width, beam)
 
-    ee_average, nonzero_ee, bb_average, nonzero_bb, eb, nz = binning(ee_scaled, bb_scaled, ell_r, bins)
+    qq_scaled, uu_scaled, qq_scaled_ma, uu_scaled_ma = chunk_fts(q_im, u_im, clims_pix_y, clims_pix_x, width, ft_taper, pad, i, area_width, beam)
 
-    plot_all(q_in, u_in, pol_in, w, center_pix_x, center_pix_y, width_deg, bins_axis, ee_average, bb_average, nonzero_ee, nonzero_bb, i, field, beam)
+    qz,uz,nz,bins_z = binning(qq_scaled_ma, uu_scaled_ma, ell_cut, ell_hist_cut, bins, bins_axis)
+
+#Scale noise APS to map level beyond beam scale, subtract from masked 2D FFT, 
+
+    qq_nonoise,uu_nonoise,qz_nonoise,uz_nonoise,q_scaled_noise,u_scaled_noise, qu_ratio=noise_scale(qq_scaled_ma, uu_scaled_ma, qqnoise_scaled_ma, qz, uz, qnz, bins_z)
+
+#Plot
+
+    plot_all(q_in, u_in, pol_in, w, center_pix_x, center_pix_y, width_deg, bins_z, qz, uz, qz_nonoise, uz_nonoise, qnz, q_scaled_noise, u_scaled_noise, qq_nonoise, uu_nonoise, i, field, beam, qu_ratio)
+
+
+
+#Scale noise APS to map level beyond beam scale, subtract from masked 2D FFT, 
+
+
 
     
 

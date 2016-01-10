@@ -20,11 +20,16 @@ polfile=field+'_polarised_intensity.fits'
 header_cube=qin[0].header
 
 map_header=header_cube.copy()
-map_header.remove('ctype3')
-map_header.remove('crval3')
-map_header.remove('crpix3')
-map_header.remove('cdelt3')
-map_header.remove('crota3')
+try:
+    map_header.remove('ctype3')
+    map_header.remove('crval3')
+    map_header.remove('crpix3')
+    map_header.remove('cdelt3')
+    map_header.remove('crota3')
+
+except ValueError:
+    print "the header is already corrected for 2D image"
+
 map_header['OBJECT']='GALFACTS_{0} Polarised intensity map'.format(field)
 
 try:
