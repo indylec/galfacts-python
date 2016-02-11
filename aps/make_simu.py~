@@ -1,0 +1,29 @@
+import numpy as np
+import glob
+import struct
+
+beams=[]
+for b in range(0,7):
+    beams.append("beam"+str(b))
+
+print "beams used: ",beams
+
+sim_dir="/local/scratch/GALFACTS/binary_tests/test1/"#"/researchdata/fhgfs/arecibo-scratch/simulated/"
+infile="average.dat"  #change these as required
+
+mjds=glob.glob('5*')
+mjds.sort()
+
+for day in mjds:
+    for beam in beams:
+        print "Converting day {0}, {1}".format(day,beam)
+        datfile=sim_dir+day+"/"+beam+"/"+infile
+
+        with file(datfile,'rb+') as f:
+            fstring=f.read()
+            nosamples=strcut.unpack_from('i',fstring)
+            noise=np.random.randn(nosamples)
+            for samp in range (nosamples):
+                f.seek(16+i*28)
+                f.write(struct.pack('f',nosamples[i]))
+                

@@ -1,0 +1,14 @@
+#program to plot Q, U, angle, reconstructed angle and fit vs. lambda sq.
+
+
+import numpy as np
+import argparse
+from astropy.io import fits
+
+parser=argparse.ArgumentParser()
+parser.add_argument("q_in")
+parser.add_argument("u_in")
+parser.add_argument("rm_in")
+parser.add_argument("zero_angle_in")
+parser.add_argument("dicube_in")
+parser.add_argument("weights_in")

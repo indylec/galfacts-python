@@ -93,8 +93,8 @@ diff=target-angle
 
 
 #plot everything
-#plt.rc('text',usetex=True)
-#plt.rc('font', family='serif')
+plt.rc('text',usetex=True)
+plt.rc('font', family='serif')
 fig=plt.figure()
 ax1=fig.add_subplot(111)
 #ax1.plot(l2_good,q_good,'b:',label='Q')
@@ -107,7 +107,7 @@ ax1.plot(l2_good,target[goodch],'b-',label='target')
 ax1.plot(l2_good,angle_good,'gx',label='raw angle')
 ax1.plot(l2_good,rm_angle_good,'r+',label='pred. angle')
 ax1.plot(l2_good,angle_fit,'k-', label='linear fit')
-plt.xlabel('lambda^2')
+plt.xlabel('$\lambda^2$')
 plt.ylabel('pol. angle [rad]')
 
 plt.legend(loc="upper left")

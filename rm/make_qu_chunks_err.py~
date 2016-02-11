@@ -1,0 +1,49 @@
+#import all the stuff
+import numpy as np
+from astropy.io import fits
+import sys
+
+sys.argv[1]=qfile
+sys.argv[2]=ufile
+
+nochunks=5
+binwidth=10
+
+#read in Q, U
+q=fits.getdata(qfile)
+qhead=fits.getheader(qfile)
+
+#loop over chunks
+
+chunksize=q.shape[2]/nochunks
+chunk_remain=q.shape[2]nochunks
+
+chansize=q.shape[0]/binsize
+chan_remain=q.shape[0]%binsize
+
+q_err=np.empty(np.shape(q))
+
+for i in range(nochunks):
+    if chunk_remain==0:
+        q=q[:,:,i*chunksize:(i+1)*chunksize]
+        #u=u[:,:,i*chunksize:(i+1)*chunksize]
+    elif  i <=chunk_remain:
+        q=q[:,:,i*(chunksize+1):(i+1)*(chunksize+1)]
+        #u=u[:,:,i*(chunksize+1):(i+1)*(chunksize+1)]
+
+    elif i>chunk_remain:
+        q=q[:,:,i*chunksize+chunk_remain:(i+1)*chunksize+chunk_remain]
+        #u=u[:,:,i*chunksize+chunk_remain:(i+1)*chunksize+chunk_remain]
+
+    
+
+    
+
+#loop over channel bins
+
+#take std dev
+
+#write out Q chunk and Q stdev as fits file and image extension
+
+#same with U
+
