@@ -1,6 +1,6 @@
 #/Users/leclercq/miniconda/bin/python
 
-#This is the code that caluclates the APS of a given Q and U field. It divides the field up into chunks of a given width, pads to the nearest power of 2, and does the 2D FT. The output displays: 1D aps for QQ, UU, 2D QQ and UU, Q, U and P. We then mask out the bow-tie cut, corresponding to the striping noise, and do the radial averaging to try and figureout what, if any, scaling relation there is between the QQ and UU components.
+#Calculate APS for given field by dividing into chunks etc etc, outputs 1D plot of EE, BB, QQ, UU before and after noise removal; also plots fitted noise. Fits power law to corrected and uncorrected EE, BB and displays slopes. Note noise is only removed from QQ and UU; EE and BB are then constructed from these. For 2D imshow plots, see aps_thesis_plots_2D.py
 
 import numpy as np 
 import matplotlib
@@ -198,30 +198,31 @@ def chunk_fts(q_im,u_im,clims_pix_y,clims_pix_x,width,ft_taper,pad,i,area_width,
 #ft
     qft_final=np.fft.fftshift(np.fft.fft2(q_chunk))
     uft_final=np.fft.fftshift(np.fft.fft2(u_chunk))
-    
-#Calculate E and B mode functions
-
-    #emode=qft_final*np.cos(2.*phi_ell)+uft_final*np.sin(2.*phi_ell)
-    #bmode=-qft_final*np.sin(2.*phi_ell)+uft_final*np.cos(2.*phi_ell)
-
-#Calculate QQ and UU functions
 
 #Divide out beam
     if beam == True:
         qft_final=qft_final/ft_beam
         uft_final=uft_final/ft_beam
+    
+#Calculate E and B mode functions
+    emode=qft_final*np.cos(2.*phi_ell)+uft_final*np.sin(2.*phi_ell)
+    bmode=-qft_final*np.sin(2.*phi_ell)+uft_final*np.cos(2.*phi_ell)
 
+#Calculate QQ and UU functions
 
 #compute correlations (EE,BB)
     qq=qft_final*np.conj(qft_final)
     uu=uft_final*np.conj(uft_final)
-    
+    ee=emode*np.conj(emode)
+    bb=bmode*np.conj(bmode)
 
 #account for size of array:
     qq_scaled=qq*area_width/1024**2
     uu_scaled=uu*area_width/1024**2
+    ee_scaled=ee*area_width/1024**2
+    bb_scaled=bb*area_width/1024**2
 
-#mask out the striping features
+    #mask out the striping features
 
     xm=ym=np.arange(1024)
     Xm,Ym=np.meshgrid(xm,ym)
@@ -233,9 +234,11 @@ def chunk_fts(q_im,u_im,clims_pix_y,clims_pix_x,width,ft_taper,pad,i,area_width,
     qq_scaled_ma=ma.masked_where((xyrad>48) & (np.abs((Ym-512)/(Xm-512))<np.abs(np.tan(np.pi/12.))),qq_scaled)
     uu_scaled_ma=ma.masked_where((xyrad>48) & (np.abs((Ym-512)/(Xm-512))<np.abs(np.tan(np.pi/12.))),uu_scaled)
 
+    ee_scaled_ma=ma.masked_where((xyrad>48) & (np.abs((Ym-512)/(Xm-512))<np.abs(np.tan(np.pi/12.))),ee_scaled)
+    bb_scaled_ma=ma.masked_where((xyrad>48) & (np.abs((Ym-512)/(Xm-512))<np.abs(np.tan(np.pi/12.))),bb_scaled)
     
 
-    return qq_scaled, uu_scaled, qq_scaled_ma, uu_scaled_ma
+    return qq_scaled, uu_scaled, ee_scaled, bb_scaled, qq_scaled_ma, uu_scaled_ma, ee_scaled_ma, bb_scaled_ma
 
     
 #Bin the C_l for E and B to calculate radial average
@@ -299,18 +302,52 @@ def noise_scale(qq_scaled_ma, uu_scaled_ma, qqnoise_scaled_ma, qz, uz, qnz, bins
 
     return qq_nonoise,uu_nonoise,qq_average_nonoise,uu_average_nonoise,q_scaled_noise,u_scaled_noise, qu_ratio
 
+def fit_power_law(ee_average, bb_average, bins_axis, w, field, i):
+
+    print bins_axis[30:70]-bins_axis[50]
+    print np.log10(bins_axis[30:70])-np.log10(bins_axis[50])    
+    
+#Fit the power-law linearly, for intermediate ells, subtract center value
+    slope,offset,c,d,e=stats.linregress(np.log10(bins_axis[30:70])-np.log10(bins_axis[50]),np.log10((ee_average[30:70]+bb_average[30:70])/2))
+
+   
+
+    print slope,offset
+   
+
+#Store the center pixel galactic coordinates and APS slope value
+
+    lon,lat=w.all_pix2world(center_pix_x[i],center_pix_y[i],0)
+
+    icrs_coords=SkyCoord(lon,lat,frame='icrs',unit='deg')
+
+    gal_coords=icrs_coords.galactic
+
+    row=field+'{0:2d} '.format(i) +gal_coords.to_string('decimal')+' {0:.3f} '.format(slope) +'\n'
+
+    if os.path.isfile(latlon_out):
+        f=open(latlon_out, 'a')
+        f.write(row)
+        f.close()
+    else:
+        f=open(latlon_out,'w')
+        f.write('#Field  Chunk  l   b   slope\n')
+        f.write(row)
+        f.close()
+
+    return slope,offset
+
 #plot plot plot
 def plot_all(q_in, u_in, pol_in, w, center_pix_x, center_pix_y, width_deg, bins_z, qz, uz, qz_nonoise, uz_nonoise, qnz, q_scaled_noise, u_scaled_noise, qq_scaled_ma, qq_nonoise, chunk, field, beam, qu_ratio):
 
-    fig=plt.figure(figsize=(22,7))
+    fig=plt.figure(figsize=(20,10))
     #title='APS of GALFACTS 3.1.2 field '+field
     #fig.suptitle(title,size='medium')
 
-    #3x2 subplots: 1D APS, EE, BB
-    #                  P , Q , U 
+    #1 big plot + PI at the right
 
 #Plot the images on the bottom row
-    f1 = aplpy.FITSFigure(pol_in, figure=fig, subplot=[0.05,0.05,0.30,0.45])
+    f1 = aplpy.FITSFigure(pol_in, figure=fig, subplot=[0.75,0.05,0.2,0.9])
     #f1.tick_labels.set_font(size='x-small')
     #f1.axis_labels.set_font(size='small')
     f1.axis_labels.hide()
@@ -325,45 +362,18 @@ def plot_all(q_in, u_in, pol_in, w, center_pix_x, center_pix_y, width_deg, bins_
     f1.add_label(0.1,0.1,'P',relative=True, color='white', size='18', weight='bold')
     
 
-    f2 = aplpy.FITSFigure(q_in, figure=fig, subplot=[0.33,0.05,0.30,0.45])
-    #f2.tick_labels.set_font(size='x-small')
-    #f2.axis_labels.set_font(size='small')
-    f2.axis_labels.hide()
-    f2.tick_labels.hide()
-    f2.show_colorscale(cmap='afmhot')
-    x_coord,y_coord=f2.pixel2world(center_pix_x[chunk],center_pix_y[chunk])
-    f2.recenter(x_coord,y_coord,width=width_deg,height=width_deg)
-    f2.add_colorbar()
-    f2.colorbar.set_font(size='x-small')
-    f2.colorbar.set_axis_label_text('K')
-    f2.axis_labels.hide_x()
-    f2.add_label(0.1,0.1,'Q',relative=True, color='white', size='18', weight='bold')
     
-
-    f3 = aplpy.FITSFigure(u_in, figure=fig, subplot=[0.62,0.05,0.30,0.45])
-    f3.tick_labels.set_font(size='x-small')
-    #f3.axis_labels.set_font(size='small')
-    f3.axis_labels.hide()
-    f3.tick_labels.hide()
-    f3.show_colorscale(cmap='afmhot')
-    x_coord,y_coord=f3.pixel2world(center_pix_x[chunk],center_pix_y[chunk])
-    f3.recenter(x_coord,y_coord,width=width_deg,height=width_deg)
-    f3.add_colorbar()
-    f3.colorbar.set_font(size='x-small')
-    f3.colorbar.set_axis_label_text('K')
-    f3.add_label(0.1,0.1,'U',relative=True, color='white', size='18', weight='bold')
-
     
 
 #Plot the APS top left
-    ax1=fig.add_axes([0.05,0.55,0.35,0.40])
+    ax1=fig.add_axes([0.05,0.05,0.7,0.9])
     #ax.set_autoscale_on(False)
 
     ax1.set_xlabel('$\ell$',fontsize='medium' )
-    #qz_lin,= ax1.plot(bins_z,qz,'r-',alpha=0.4)
-    #qz_mark,= ax1.plot(bins_z,qz,'ro',markersize=3)
-    #uz_lin,=ax1.plot(bins_z,uz,'b-',alpha=0.4)
-    #uz_mark,=ax1.plot(bins_z,uz,'bo',markersize=3)
+    qz_lin,= ax1.plot(bins_z,qz,'r-',alpha=0.4)
+    qz_mark,= ax1.plot(bins_z,qz,'ro',markersize=3)
+    uz_lin,=ax1.plot(bins_z,uz,'b-',alpha=0.4)
+    uz_mark,=ax1.plot(bins_z,uz,'bo',markersize=3)
     qz_nonoise_lin,=ax1.plot(bins_z,qz_nonoise,'r-',alpha=0.4)
     qz_nonoise_mark,=ax1.plot(bins_z,qz_nonoise,'r^',markersize=3)
     uz_nonoise_lin,=ax1.plot(bins_z,uz_nonoise,'b-',alpha=0.4)
@@ -406,94 +416,7 @@ def plot_all(q_in, u_in, pol_in, w, center_pix_x, center_pix_y, width_deg, bins_
     ax1.set_yscale('log')
     ax1.text(30, 1E-6, '$Q/U$ noise ratio = {:.2f} '.format(qu_ratio))
 
-    #Plot 2D QQ top middle
-    ax2=fig.add_axes([0.33,0.55,0.35,0.40])
-
-    from matplotlib.patches import Circle
-
-    d=Circle((256,256),radius=24)
-    e=Circle((256,256),radius=48)
-    f=Circle((256,256),radius=95)
-    g=Circle((256,256),radius=142)
-    h=Circle((256,256),radius=190)
-
-    d.set_facecolor("none")
-    e.set_facecolor("none")
-    f.set_facecolor("none")
-    g.set_facecolor("none")
-    h.set_facecolor("none")
-
-    d.set_alpha(0.5)
-    e.set_alpha(0.5)
-    f.set_alpha(0.5)
-    g.set_alpha(0.5)
-    h.set_alpha(0.5)
-
-    circ1=str(int(ell_r[512,512+24]))
-    circ2=str(int(ell_r[512,512+48]))
-    circ3=str(int(ell_r[512,512+95]))
-    circ4=str(int(ell_r[512,512+142]))
-    circ5=str(int(ell_r[512,512+190]))
-
-    im1=ax2.imshow(np.log10(np.abs(qq_scaled_ma))[256:768,256:768], clim=(np.log10(s2_ymin),np.log10(s2_ymax)))
-    cbar1=plt.colorbar(mappable=im1, ax=ax2)
-    cbar1.set_label('$\mathrm{log}_{10} \; C_{\ell} [\mathrm{K}^2]$',size=12)
-    cbar1.ax.tick_params(labelsize=7)
-
-    ax2.text(12,32,'circles at $\ell$ = '+circ1+', '+circ2+', '+circ3+', '+circ4+', '+circ5,fontsize=7)
-    ax2.text(12,450,'QQ-noise')
-
-    ax2.add_artist(d)
-    ax2.add_artist(e)
-    ax2.add_artist(f)
-    ax2.add_artist(g)
-    ax2.add_artist(h)
-    
-    ax2.set_xticklabels([])
-    ax2.set_yticklabels([])
-    ax2.set_xticks([])
-    ax2.set_yticks([])
-
-    #Plot BB top right
-
-    ax3=fig.add_axes([0.55,0.55,0.35,0.40])
-
-    d1=Circle((256,256),radius=24)
-    e1=Circle((256,256),radius=48)
-    f1=Circle((256,256),radius=95)
-    g1=Circle((256,256),radius=142)
-    h1=Circle((256,256),radius=190)
-
-    d1.set_facecolor("none")
-    e1.set_facecolor("none")
-    f1.set_facecolor("none")
-    g1.set_facecolor("none")
-    h1.set_facecolor("none")
-
-    d1.set_alpha(0.5)
-    e1.set_alpha(0.5)
-    f1.set_alpha(0.5)
-    g1.set_alpha(0.5)
-    h1.set_alpha(0.5)
-
-    im2=ax3.imshow(np.log10(np.abs(qq_nonoise))[256:768,256:768], clim=(np.log10(s2_ymin),np.log10(s2_ymax)))
-    cbar2=plt.colorbar(mappable=im2, ax=ax3)
-    cbar2.set_label('$\mathrm{log}_{10} \; C_{\ell} [\mathrm{K}^2]$',size=12)
-    cbar2.ax.tick_params(labelsize=7)
-
-    ax3.text(12,32,'circles at $\ell$ = '+circ1+', '+circ2+', '+circ3+', '+circ4+', '+circ5,fontsize=7)
-    ax3.text(12,450,'UU-noise')
-
-    ax3.add_artist(d1)
-    ax3.add_artist(e1)
-    ax3.add_artist(f1)
-    ax3.add_artist(g1)
-    ax3.add_artist(h1)
-
-    ax3.set_xticklabels([])
-    ax3.set_yticklabels([])
-    ax3.set_xticks([])
-    ax3.set_yticks([])
+     pwr_label="power law, index="+str(slope)[:6]
 
     
 
@@ -549,17 +472,13 @@ for i in range (nochunks):
 
     qz,uz,nz,bins_z = binning(qq_scaled_ma, uu_scaled_ma, ell_cut, ell_hist_cut, bins, bins_axis)
 
-    
-
 #Scale noise APS to map level beyond beam scale, subtract from masked 2D FFT, 
 
-    qq_nonoise,uu_nonoise,qz_nonoise,uz_nonoise,qnz_scaled,unz_scaled, qu_ratio=noise_scale(qq_scaled_ma, uu_scaled_ma, qqnoise_scaled_ma, qz, uz, qnz, bins_z)
-
-    slope,offset=fit_power_law(ez,bz,bins_z,w,field,i)
+    qq_nonoise,uu_nonoise,qz_nonoise,uz_nonoise,q_scaled_noise,u_scaled_noise, qu_ratio=noise_scale(qq_scaled_ma, uu_scaled_ma, qqnoise_scaled_ma, qz, uz, qnz, bins_z)
 
 #Plot
 
-    plot_all(q_in, u_in, pol_in, w, center_pix_x, center_pix_y, width_deg, bins_z, qz, uz, qz_nonoise, uz_nonoise, qnz, qnz_scaled, unz_scaled, qq_nonoise, uu_nonoise, i, field, beam, qu_ratio)
+    plot_all(q_in, u_in, pol_in, w, center_pix_x, center_pix_y, width_deg, bins_z, qz, uz, qz_nonoise, uz_nonoise, qnz, q_scaled_noise, u_scaled_noise, qq_nonoise, uu_nonoise, i, field, beam, qu_ratio)
 
 
 
@@ -572,49 +491,4 @@ for i in range (nochunks):
 
 
 
-#print bins_axis[30:70]-bins_axis[50]
-    #print np.log10(bins_axis[30:70])-np.log10(bins_axis[50])    
-    
-#Fit the power-law linearly, for intermediate ells, subtract center value
-    #slope,offset,c,d,e=stats.linregress(np.log10(bins_axis[30:70])-np.log10(bins_axis[50]),np.log10((ee_average[30:70]+bb_average[30:70])/2))
 
-    #Fit modified power law accounting for effect of beam and noise
-    ## print "Pivot point is ell=",bins_axis[50]
-    
-    ## def apsfit_ee(x,a,w,n):
-    ##     return ee_average[50]*w*(x/bins_axis[50])**a + n
-    ## def apsfit_bb(x,a,w,n):
-    ##     return bb_average[50]*w*(x/bins_axis[50])**a + n
-    ## def apsfit_eb(x,a,w,n):
-    ##     return eb[50]*w*(x/bins_axis[50])**a + n
-
-    ## pfit_ee,pcov_ee=sciopt.curve_fit(apsfit_ee,bins_axis[nonzero_ee],ee_average[nonzero_ee])
-    ## pfit_bb,pcov_bb=sciopt.curve_fit(apsfit_bb,bins_axis[nonzero_bb],bb_average[nonzero_bb])
-    ## pfit_eb,pcov_eb=sciopt.curve_fit(apsfit_eb,bins_axis[nz],eb)
-
-    ## print "ee fit params (index, weight, noise):", pfit_ee
-    ## print "bb fit params (index, weight, noise):", pfit_bb
-    ## print "eb fit params (index, weight, noise):", pfit_eb
-
-    #print slope,offset
-    #pwr_label="power law, index="+str(slope)[:6]
-
-#Store the center pixel galactic coordinates and APS slope value
-
-    ## lon,lat=w.all_pix2world(center_pix_x[i],center_pix_y[i],0)
-
-    ## icrs_coords=SkyCoord(lon,lat,frame='icrs',unit='deg')
-
-    ## gal_coords=icrs_coords.galactic
-
-    ## row=field+'{0:2d} '.format(i) +gal_coords.to_string('decimal')+' {0:.3f} '.format(slope) +'\n'
-
-    ## if os.path.isfile(latlon_out):
-    ##     f=open(latlon_out, 'a')
-    ##     f.write(row)
-    ##     f.close()
-    ## else:
-    ##     f=open(latlon_out,'w')
-    ##     f.write('#Field  Chunk  l   b   slope\n')
-    ##     f.write(row)
-    ##     f.close()

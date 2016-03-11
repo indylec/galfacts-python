@@ -1,12 +1,16 @@
-#/Users/leclercq/miniconda/bin/python
+#/Users/leclercq/miniconda/
+
+###PLOTTING CODE; USE THIS TO PLOT THE VARIOUS COMBINATIONS OF MAPS, 1D APS and 2D APS WITH OR WITHOUT THE CUT
 
 #This is the code that caluclates the APS of a given Q and U field. It divides the field up into chunks of a given width, pads to the nearest power of 2, and does the 2D FT. The output displays: 1D aps for QQ, UU, 2D QQ and UU, Q, U and P. We then mask out the bow-tie cut, corresponding to the striping noise, and do the radial averaging to try and figureout what, if any, scaling relation there is between the QQ and UU components.
 
 import numpy as np 
 import matplotlib
-matplotlib.use('MacOSX')
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+import matplotlib.patheffects as PathEffects
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import aplpy
 import gaussbeam
 import sys
@@ -19,6 +23,11 @@ from astropy.coordinates import SkyCoord
 from scipy import optimize as sciopt
 import os.path
 pi=np.pi
+
+from matplotlib import rc
+
+rc('font',family='serif')
+rc('text', usetex=True)
 
 ################ MODULES #############
 
@@ -302,206 +311,235 @@ def noise_scale(qq_scaled_ma, uu_scaled_ma, qqnoise_scaled_ma, qz, uz, qnz, bins
 #plot plot plot
 def plot_all(q_in, u_in, pol_in, w, center_pix_x, center_pix_y, width_deg, bins_z, qz, uz, qz_nonoise, uz_nonoise, qnz, q_scaled_noise, u_scaled_noise, qq_scaled_ma, qq_nonoise, chunk, field, beam, qu_ratio):
 
-    fig=plt.figure(figsize=(22,7))
+    fig=plt.figure(figsize=(4,10))
     #title='APS of GALFACTS 3.1.2 field '+field
     #fig.suptitle(title,size='medium')
-
-    #3x2 subplots: 1D APS, EE, BB
+ 
+    #3x1 subplots: P, QQ, QQ-cut
     #                  P , Q , U 
 
 #Plot the images on the bottom row
-    f1 = aplpy.FITSFigure(pol_in, figure=fig, subplot=[0.05,0.05,0.30,0.45])
-    #f1.tick_labels.set_font(size='x-small')
+    #f1 = aplpy.FITSFigure(pol_in, figure=fig, subplot=[0.05,0.05,0.30,0.45])
+    f1 = aplpy.FITSFigure(q_in, figure=fig, subplot=[0.05,0.71,0.95,0.28])
+    f1.tick_labels.set_font(size='large')
     #f1.axis_labels.set_font(size='small')
-    f1.axis_labels.hide()
-    f1.tick_labels.hide()
-    f1.show_colorscale(cmap='afmhot')
+    #f1.axis_labels.hide()
+    #f1.tick_labels.hide()
+    f1.show_colorscale(cmap='afmhot', vmin=-0.05, vmax=0.10)
     x_coord,y_coord=f1.pixel2world(center_pix_x[chunk],center_pix_y[chunk])
     f1.recenter(x_coord,y_coord,width=width_deg,height=width_deg)
     f1.add_colorbar()
-    f1.colorbar.set_font(size='x-small')
+    f1.colorbar.set_font(size='medium')
     f1.colorbar.set_axis_label_text('K')
-    f1.axis_labels.hide_x()
-    f1.add_label(0.1,0.1,'P',relative=True, color='white', size='18', weight='bold')
+    f1.axis_labels.set_xtext("RA")
+    f1.axis_labels.set_ytext("Dec")
+    #f1.axis_labels.hide_x()
+    #f1.tick_labels.hide_x()
+    f1.tick_labels.set_xformat('hh:mm')
+    f1.tick_labels.set_yformat('dd')
+    #f1.axis_labels.hide_x()
+    #f1.add_label(0.1,0.1,'P',relative=True, color='white', size='18', weight='bold')
+    f1.add_label(0.1,0.1,'Q',relative=True, color='black', size='18', weight='bold')
+
+    ## f2 = aplpy.FITSFigure(q_in, figure=fig, subplot=[0.33,0.05,0.30,0.45])
+    ## #f2.tick_labels.set_font(size='x-small')
+    ## #f2.axis_labels.set_font(size='small')
+    ## f2.axis_labels.hide()
+    ## f2.tick_labels.hide()
+    ## f2.show_colorscale(cmap='afmhot')
+    ## x_coord,y_coord=f2.pixel2world(center_pix_x[chunk],center_pix_y[chunk])
+    ## f2.recenter(x_coord,y_coord,width=width_deg,height=width_deg)
+    ## f2.add_colorbar()
+    ## f2.colorbar.set_font(size='x-small')
+    ## f2.colorbar.set_axis_label_text('K')
+    ## f2.axis_labels.hide_x()
+    ## f2.add_label(0.1,0.1,'Q',relative=True, color='white', size='18', weight='bold')
     
 
-    f2 = aplpy.FITSFigure(q_in, figure=fig, subplot=[0.33,0.05,0.30,0.45])
-    #f2.tick_labels.set_font(size='x-small')
-    #f2.axis_labels.set_font(size='small')
-    f2.axis_labels.hide()
-    f2.tick_labels.hide()
-    f2.show_colorscale(cmap='afmhot')
-    x_coord,y_coord=f2.pixel2world(center_pix_x[chunk],center_pix_y[chunk])
-    f2.recenter(x_coord,y_coord,width=width_deg,height=width_deg)
-    f2.add_colorbar()
-    f2.colorbar.set_font(size='x-small')
-    f2.colorbar.set_axis_label_text('K')
-    f2.axis_labels.hide_x()
-    f2.add_label(0.1,0.1,'Q',relative=True, color='white', size='18', weight='bold')
-    
-
-    f3 = aplpy.FITSFigure(u_in, figure=fig, subplot=[0.62,0.05,0.30,0.45])
-    f3.tick_labels.set_font(size='x-small')
-    #f3.axis_labels.set_font(size='small')
-    f3.axis_labels.hide()
-    f3.tick_labels.hide()
-    f3.show_colorscale(cmap='afmhot')
-    x_coord,y_coord=f3.pixel2world(center_pix_x[chunk],center_pix_y[chunk])
-    f3.recenter(x_coord,y_coord,width=width_deg,height=width_deg)
-    f3.add_colorbar()
-    f3.colorbar.set_font(size='x-small')
-    f3.colorbar.set_axis_label_text('K')
-    f3.add_label(0.1,0.1,'U',relative=True, color='white', size='18', weight='bold')
+    ## f3 = aplpy.FITSFigure(u_in, figure=fig, subplot=[0.62,0.05,0.30,0.45])
+    ## f3.tick_labels.set_font(size='x-small')
+    ## #f3.axis_labels.set_font(size='small')
+    ## f3.axis_labels.hide()
+    ## f3.tick_labels.hide()
+    ## f3.show_colorscale(cmap='afmhot')
+    ## x_coord,y_coord=f3.pixel2world(center_pix_x[chunk],center_pix_y[chunk])
+    ## f3.recenter(x_coord,y_coord,width=width_deg,height=width_deg)
+    ## f3.add_colorbar()
+    ## f3.colorbar.set_font(size='x-small')
+    ## f3.colorbar.set_axis_label_text('K')
+    ## f3.add_label(0.1,0.1,'U',relative=True, color='white', size='18', weight='bold')
 
     
 
 #Plot the APS top left
-    ax1=fig.add_axes([0.05,0.55,0.35,0.40])
-    #ax.set_autoscale_on(False)
+    ## ax1=fig.add_axes([0.05,0.55,0.35,0.40])
+    ## #ax.set_autoscale_on(False)
 
-    ax1.set_xlabel('$\ell$',fontsize='medium' )
-    #qz_lin,= ax1.plot(bins_z,qz,'r-',alpha=0.4)
-    #qz_mark,= ax1.plot(bins_z,qz,'ro',markersize=3)
-    #uz_lin,=ax1.plot(bins_z,uz,'b-',alpha=0.4)
-    #uz_mark,=ax1.plot(bins_z,uz,'bo',markersize=3)
-    qz_nonoise_lin,=ax1.plot(bins_z,qz_nonoise,'r-',alpha=0.4)
-    qz_nonoise_mark,=ax1.plot(bins_z,qz_nonoise,'r^',markersize=3)
-    uz_nonoise_lin,=ax1.plot(bins_z,uz_nonoise,'b-',alpha=0.4)
-    uz_nonoise_mark,=ax1.plot(bins_z,uz_nonoise,'b^',markersize=3)
-    q_scaled_noise_lin,=ax1.plot(bins_z,q_scaled_noise,'g-', alpha=0.4)
-    #q_scaled_noise_mark,=ax1.plot(bins_z,q_scaled_noise,'gd', markersize=3)
-    u_scaled_noise_lin,=ax1.plot(bins_z,u_scaled_noise,'g-', alpha=0.4)
-    #u_scaled_noise_mark,=ax1.plot(bins_z,u_scaled_noise,'gD', markersize=3)
+    ## ax1.set_xlabel('$\ell$',fontsize='medium' )
+    ## #qz_lin,= ax1.plot(bins_z,qz,'r-',alpha=0.4)
+    ## #qz_mark,= ax1.plot(bins_z,qz,'ro',markersize=3)
+    ## #uz_lin,=ax1.plot(bins_z,uz,'b-',alpha=0.4)
+    ## #uz_mark,=ax1.plot(bins_z,uz,'bo',markersize=3)
+    ## qz_nonoise_lin,=ax1.plot(bins_z,qz_nonoise,'r-',alpha=0.4)
+    ## qz_nonoise_mark,=ax1.plot(bins_z,qz_nonoise,'r^',markersize=3)
+    ## uz_nonoise_lin,=ax1.plot(bins_z,uz_nonoise,'b-',alpha=0.4)
+    ## uz_nonoise_mark,=ax1.plot(bins_z,uz_nonoise,'b^',markersize=3)
+    ## q_scaled_noise_lin,=ax1.plot(bins_z,q_scaled_noise,'g-', alpha=0.4)
+    ## #q_scaled_noise_mark,=ax1.plot(bins_z,q_scaled_noise,'gd', markersize=3)
+    ## u_scaled_noise_lin,=ax1.plot(bins_z,u_scaled_noise,'g-', alpha=0.4)
+    ## #u_scaled_noise_mark,=ax1.plot(bins_z,u_scaled_noise,'gD', markersize=3)
     
-    #eefitlin = ax.plot(bins_axis[nonzero_ee],apsfit_ee(bins_axis[nonzero_ee],pfit_ee[0],pfit_ee[1],pfit_ee[2]), 'r-')
-    #bbfitlin = ax.plot(bins_axis[nonzero_bb],apsfit_bb(bins_axis[nonzero_bb],pfit_bb[0],pfit_bb[1],pfit_bb[2]), 'b-')
-    #ebfitlin = ax.plot(bins_axis[nz],apsfit_eb(bins_axis[nz],pfit_eb[0],pfit_eb[1],pfit_eb[2]), 'k-')
+    ## #eefitlin = ax.plot(bins_axis[nonzero_ee],apsfit_ee(bins_axis[nonzero_ee],pfit_ee[0],pfit_ee[1],pfit_ee[2]), 'r-')
+    ## #bbfitlin = ax.plot(bins_axis[nonzero_bb],apsfit_bb(bins_axis[nonzero_bb],pfit_bb[0],pfit_bb[1],pfit_bb[2]), 'b-')
+    ## #ebfitlin = ax.plot(bins_axis[nz],apsfit_eb(bins_axis[nz],pfit_eb[0],pfit_eb[1],pfit_eb[2]), 'k-')
 
-    #power_law,= ax.plot(bins_axis[30:70],10**(slope*(np.log10(bins_axis[30:70])-np.log10(bins_axis[50]))+offset),'k-',linewidth=0.8)
+    ## #power_law,= ax.plot(bins_axis[30:70],10**(slope*(np.log10(bins_axis[30:70])-np.log10(bins_axis[50]))+offset),'k-',linewidth=0.8)
 
 
-    beam_cut = ax1.axvline(x=180/(3.5/60.),color='k',linestyle='dashed',alpha=0.8)
+    ## beam_cut = ax1.axvline(x=180/(3.5/60.),color='k',linestyle='dashed',alpha=0.8)
 
-    ax1.axvline(x=506.,color='k',linestyle='dotted',alpha=0.6)
-    ax1.axvline(x=1012.,color='k',linestyle='dotted',alpha=0.6)
-    ax1.axvline(x=2003.,color='k',linestyle='dotted',alpha=0.6)
-    ax1.axvline(x=2995.,color='k',linestyle='dotted',alpha=0.6)
+    ## ax1.axvline(x=506.,color='k',linestyle='dotted',alpha=0.6)
+    ## ax1.axvline(x=1012.,color='k',linestyle='dotted',alpha=0.6)
+    ## ax1.axvline(x=2003.,color='k',linestyle='dotted',alpha=0.6)
+    ## ax1.axvline(x=2995.,color='k',linestyle='dotted',alpha=0.6)
 
     #axis limits to ensure consistent plots across fields
     #N2 ylims
     #ax.set_ylim(1E-5,10)
 
     #S2 ylims
-    s2_ymin=1E-9
-    s2_ymax=2.
-    ax1.set_ylim(s2_ymin,s2_ymax)
+    s2_ymin=1E-7
+    s2_ymax=1E-2
+    ## ax1.set_ylim(s2_ymin,s2_ymax)
     
-    #ax1.set_xlim(90.,4007.) 
+    ## #ax1.set_xlim(90.,4007.) 
 
-    ax1.set_ylabel('$C_{\ell}[K^2]$',fontsize='medium')
-    ax1.tick_params(labelsize='small')
-    #ax1.legend([(qz_mark,qz_lin),(uz_mark,uz_lin),(qz_nonoise_mark,qz_nonoise_lin),(uz_nonoise_mark,uz_nonoise_lin),q_scaled_noise_lin,u_scaled_noise_lin,beam_cut],["QQ","UU","QQ-noise","UU-noise","QQ noise power","UU noise power","beamwidth scale"],fontsize='medium',loc=0)
-    ax1.legend([(qz_nonoise_mark,qz_nonoise_lin),(uz_nonoise_mark,uz_nonoise_lin),beam_cut],["QQ-noise","UU-noise","beamwidth scale"],fontsize='medium',loc=0)
-    ax1.set_xscale('log') 
-    ax1.set_yscale('log')
-    ax1.text(30, 1E-6, '$Q/U$ noise ratio = {:.2f} '.format(qu_ratio))
+    ## ax1.set_ylabel('$C_{\ell}[K^2]$',fontsize='medium')
+    ## ax1.tick_params(labelsize='small')
+    ## #ax1.legend([(qz_mark,qz_lin),(uz_mark,uz_lin),(qz_nonoise_mark,qz_nonoise_lin),(uz_nonoise_mark,uz_nonoise_lin),q_scaled_noise_lin,u_scaled_noise_lin,beam_cut],["QQ","UU","QQ-noise","UU-noise","QQ noise power","UU noise power","beamwidth scale"],fontsize='medium',loc=0)
+    ## ax1.legend([(qz_nonoise_mark,qz_nonoise_lin),(uz_nonoise_mark,uz_nonoise_lin),beam_cut],["QQ-noise","UU-noise","beamwidth scale"],fontsize='medium',loc=0)
+    ## ax1.set_xscale('log') 
+    ## ax1.set_yscale('log')
+    ## ax1.text(30, 1E-6, '$Q/U$ noise ratio = {:.2f} '.format(qu_ratio))
 
     #Plot 2D QQ top middle
-    ax2=fig.add_axes([0.33,0.55,0.35,0.40])
+    ax2=fig.add_axes([0.05,0.38,0.95,0.28])
 
     from matplotlib.patches import Circle
 
-    d=Circle((256,256),radius=24)
-    e=Circle((256,256),radius=48)
-    f=Circle((256,256),radius=95)
-    g=Circle((256,256),radius=142)
-    h=Circle((256,256),radius=190)
+    ## d=Circle((256,256),radius=24)
+    ## e=Circle((256,256),radius=48)
+    ## f=Circle((256,256),radius=95)
+    ## g=Circle((256,256),radius=142)
+    ## h=Circle((256,256),radius=190)
 
-    d.set_facecolor("none")
-    e.set_facecolor("none")
-    f.set_facecolor("none")
-    g.set_facecolor("none")
-    h.set_facecolor("none")
+    ## d.set_facecolor("none")
+    ## e.set_facecolor("none")
+    ## f.set_facecolor("none")
+    ## g.set_facecolor("none")
+    ## h.set_facecolor("none")
 
-    d.set_alpha(0.5)
-    e.set_alpha(0.5)
-    f.set_alpha(0.5)
-    g.set_alpha(0.5)
-    h.set_alpha(0.5)
+    ## d.set_alpha(0.5)
+    ## e.set_alpha(0.5)
+    ## f.set_alpha(0.5)
+    ## g.set_alpha(0.5)
+    ## h.set_alpha(0.5)
 
-    circ1=str(int(ell_r[512,512+24]))
-    circ2=str(int(ell_r[512,512+48]))
-    circ3=str(int(ell_r[512,512+95]))
-    circ4=str(int(ell_r[512,512+142]))
-    circ5=str(int(ell_r[512,512+190]))
+    ## circ1=str(int(ell_r[512,512+24]))
+    ## circ2=str(int(ell_r[512,512+48]))
+    ## circ3=str(int(ell_r[512,512+95]))
+    ## circ4=str(int(ell_r[512,512+142]))
+    ## circ5=str(int(ell_r[512,512+190]))
 
     im1=ax2.imshow(np.log10(np.abs(qq_scaled_ma))[256:768,256:768], clim=(np.log10(s2_ymin),np.log10(s2_ymax)))
-    cbar1=plt.colorbar(mappable=im1, ax=ax2)
-    cbar1.set_label('$\mathrm{log}_{10} \; C_{\ell} [\mathrm{K}^2]$',size=12)
-    cbar1.ax.tick_params(labelsize=7)
+    plt.gca()
+    locs2=np.asarray([-190, -94, 0, 94, 189])
+    labs2=[4000, 2000, 0, 2000, 4000]
+    #print ell_r[xlocs2], ell_r[ylocs2]
+    #plt.xticks(locs2+256,ell_r[512,locs2+512].astype(int), size='small')
+    #plt.yticks(locs2+256,ell_r[locs2+512,512].astype(int),size='small')
+    plt.xticks(locs2+256,labs2, size='large')
+    plt.yticks(locs2+256,labs2,size='large')
+    plt.xlabel('$\ell_x$', size=16, weight='bold')
+    plt.ylabel('$\ell_y$', size=16, rotation='horizontal', weight='bold')
+    divider1 = make_axes_locatable(ax2)
+    cax1 = divider1.append_axes("right", size="5%", pad=0.05)
+    cbar1=plt.colorbar(mappable=im1, cax=cax1)
+    cbar1.set_label('$\mathrm{log}_{10} \; QQ [\mathrm{K}^2]$',size=16)
+    cbar1.ax.tick_params(labelsize=12)
 
-    ax2.text(12,32,'circles at $\ell$ = '+circ1+', '+circ2+', '+circ3+', '+circ4+', '+circ5,fontsize=7)
-    ax2.text(12,450,'QQ-noise')
-
-    ax2.add_artist(d)
-    ax2.add_artist(e)
-    ax2.add_artist(f)
-    ax2.add_artist(g)
-    ax2.add_artist(h)
+    #ax2.text(12,32,'circles at $\ell$ = '+circ1+', '+circ2+', '+circ3+', '+circ4+', '+circ5,fontsize=7)
+    txt2=ax2.text(51,461,'QQ', size=18,color='white', weight='bold')
+    #plt.setp(txt2,path_effects=[PathEffects.withStroke(linewidth=3,foreground="w")])
+    ## ax2.add_artist(d)
+    ## ax2.add_artist(e)
+    ## ax2.add_artist(f)
+    ## ax2.add_artist(g)
+    ## ax2.add_artist(h)
     
-    ax2.set_xticklabels([])
-    ax2.set_yticklabels([])
-    ax2.set_xticks([])
-    ax2.set_yticks([])
+    #ax2.set_xticklabels([])
+    #ax2.set_yticklabels([])
+    #ax2.set_xticks([])
+    #ax2.set_yticks([])
 
     #Plot BB top right
 
-    ax3=fig.add_axes([0.55,0.55,0.35,0.40])
+    ax3=fig.add_axes([0.05,0.05,0.95,0.28])
 
-    d1=Circle((256,256),radius=24)
-    e1=Circle((256,256),radius=48)
-    f1=Circle((256,256),radius=95)
-    g1=Circle((256,256),radius=142)
-    h1=Circle((256,256),radius=190)
+    ## d1=Circle((256,256),radius=24)
+    ## e1=Circle((256,256),radius=48)
+    ## f1=Circle((256,256),radius=95)
+    ## g1=Circle((256,256),radius=142)
+    ## h1=Circle((256,256),radius=190)
 
-    d1.set_facecolor("none")
-    e1.set_facecolor("none")
-    f1.set_facecolor("none")
-    g1.set_facecolor("none")
-    h1.set_facecolor("none")
+    ## d1.set_facecolor("none")
+    ## e1.set_facecolor("none")
+    ## f1.set_facecolor("none")
+    ## g1.set_facecolor("none")
+    ## h1.set_facecolor("none")
 
-    d1.set_alpha(0.5)
-    e1.set_alpha(0.5)
-    f1.set_alpha(0.5)
-    g1.set_alpha(0.5)
-    h1.set_alpha(0.5)
+    ## d1.set_alpha(0.5)
+    ## e1.set_alpha(0.5)
+    ## f1.set_alpha(0.5)
+    ## g1.set_alpha(0.5)
+    ## h1.set_alpha(0.5)
 
     im2=ax3.imshow(np.log10(np.abs(qq_nonoise))[256:768,256:768], clim=(np.log10(s2_ymin),np.log10(s2_ymax)))
-    cbar2=plt.colorbar(mappable=im2, ax=ax3)
-    cbar2.set_label('$\mathrm{log}_{10} \; C_{\ell} [\mathrm{K}^2]$',size=12)
-    cbar2.ax.tick_params(labelsize=7)
+    plt.gca()
+    #locs2=np.asarray([-256, -142, -95, -48, 0, 48, 95, 142,256])
+    #print ell_r[xlocs2], ell_r[ylocs2]
+    plt.xticks(locs2+256,labs2, size='large')
+    plt.yticks(locs2+256,labs2,size='large')
+    plt.xlabel('$\ell_x$', size=16, rotation='horizontal', weight='bold')
+    plt.ylabel('$\ell_y$', size=16, rotation='horizontal', weight='bold')
+    divider2 = make_axes_locatable(ax3)
+    cax2 = divider2.append_axes("right", size="5%", pad=0.05)
+    cbar2=plt.colorbar(mappable=im2, cax=cax2)
+    cbar2.set_label('$\mathrm{log}_{10} \; QQ [\mathrm{K}^2]$',size=16)
+    cbar2.ax.tick_params(labelsize=12)
 
-    ax3.text(12,32,'circles at $\ell$ = '+circ1+', '+circ2+', '+circ3+', '+circ4+', '+circ5,fontsize=7)
-    ax3.text(12,450,'UU-noise')
+    #ax3.text(12,32,'circles at $\ell$ = '+circ1+', '+circ2+', '+circ3+', '+circ4+', '+circ5,fontsize=7)
+    txt3=ax3.text(51,461,'QQ w/ cut', size=18, color='white', weight='bold')
+    #plt.setp(txt3,path_effects=[PathEffects.withStroke(linewidth=3,foreground="w")])
 
-    ax3.add_artist(d1)
-    ax3.add_artist(e1)
-    ax3.add_artist(f1)
-    ax3.add_artist(g1)
-    ax3.add_artist(h1)
+    ## ax3.add_artist(d1)
+    ## ax3.add_artist(e1)
+    ## ax3.add_artist(f1)
+    ## ax3.add_artist(g1)
+    ## ax3.add_artist(h1)
 
-    ax3.set_xticklabels([])
-    ax3.set_yticklabels([])
-    ax3.set_xticks([])
-    ax3.set_yticks([])
+    ## ax3.set_xticklabels([])
+    ## ax3.set_yticklabels([])
+    ## ax3.set_xticks([])
+    ## ax3.set_yticks([])
 
     
 
 
     if beam == True:
-        fig.savefig("/Users/leclercq/galfacts/aps/plots/v6.1/"+field+str(chunk)+"S2c2_noise_subtraction_after_apsv6_removed_beam_dqa3.1.2.png",dpi=200, bbox_inches='tight')
+        fig.savefig("/Users/leclercq/thesis/aps/figures/images/stripenoise_"+field+"_c"+str(chunk)+".pdf",dpi=200, bbox_inches='tight')
     else:
-        fig.savefig("/Users/leclercq/galfacts/aps/plots/v6.1/"+field+str(chunk)+"S2c2_noise_subtraction_after_apsv6_dqa3.1.2.png",dpi=200, bbox_inches='tight')
+        fig.savefig("/Users/leclercq/thesis/aps/figures/images/stripenoise_"+field+"_c"+str(chunk)+".pdf",dpi=200, bbox_inches='tight')
 
 
 ##############    START OF MAIN PROGRAM    ################
@@ -543,23 +581,20 @@ qnz,unz,nnz,bins_nz = binning(qqnoise_scaled_ma, uunoise_scaled_ma, ell_cut, ell
 
 #Loop over map chunks
 
-for i in range (nochunks):
+#for i in range (nochunks):
+i=0
 
-    qq_scaled, uu_scaled, qq_scaled_ma, uu_scaled_ma = chunk_fts(q_im, u_im, clims_pix_y, clims_pix_x, width, ft_taper, pad, i, area_width, beam)
+qq_scaled, uu_scaled, qq_scaled_ma, uu_scaled_ma = chunk_fts(q_im, u_im, clims_pix_y, clims_pix_x, width, ft_taper, pad, i, area_width, beam)
 
-    qz,uz,nz,bins_z = binning(qq_scaled_ma, uu_scaled_ma, ell_cut, ell_hist_cut, bins, bins_axis)
-
-    
+qz,uz,nz,bins_z = binning(qq_scaled_ma, uu_scaled_ma, ell_cut, ell_hist_cut, bins, bins_axis)
 
 #Scale noise APS to map level beyond beam scale, subtract from masked 2D FFT, 
 
-    qq_nonoise,uu_nonoise,qz_nonoise,uz_nonoise,qnz_scaled,unz_scaled, qu_ratio=noise_scale(qq_scaled_ma, uu_scaled_ma, qqnoise_scaled_ma, qz, uz, qnz, bins_z)
-
-    slope,offset=fit_power_law(ez,bz,bins_z,w,field,i)
+qq_nonoise,uu_nonoise,qz_nonoise,uz_nonoise,q_scaled_noise,u_scaled_noise, qu_ratio=noise_scale(qq_scaled_ma, uu_scaled_ma, qqnoise_scaled_ma, qz, uz, qnz, bins_z)
 
 #Plot
 
-    plot_all(q_in, u_in, pol_in, w, center_pix_x, center_pix_y, width_deg, bins_z, qz, uz, qz_nonoise, uz_nonoise, qnz, qnz_scaled, unz_scaled, qq_nonoise, uu_nonoise, i, field, beam, qu_ratio)
+plot_all(q_in, u_in, pol_in, w, center_pix_x, center_pix_y, width_deg, bins_z, qz, uz, qz_nonoise, uz_nonoise, qnz, q_scaled_noise, u_scaled_noise, qq_scaled, qq_scaled_ma, i, field, beam, qu_ratio)
 
 
 

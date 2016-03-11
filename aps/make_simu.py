@@ -12,7 +12,7 @@ for b in range(0,7):
 
 print "beams used: ",beams
 
-sim_dir="/local/scratch/GALFACTS/binary_tests/noise_test3/"#"/researchdata/fhgfs/arecibo-scratch/simulated/"
+sim_dir="/local/scratch/GALFACTS/noise_simulation/noise_test3/"#"/researchdata/fhgfs/arecibo-scratch/simulated/"
 infile="average.dat"  #change these as required
 
 #TOD file has structure RA DEC AST I Q U V, with 4byte values

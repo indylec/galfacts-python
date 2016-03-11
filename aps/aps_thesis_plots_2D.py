@@ -549,17 +549,13 @@ for i in range (nochunks):
 
     qz,uz,nz,bins_z = binning(qq_scaled_ma, uu_scaled_ma, ell_cut, ell_hist_cut, bins, bins_axis)
 
-    
-
 #Scale noise APS to map level beyond beam scale, subtract from masked 2D FFT, 
 
-    qq_nonoise,uu_nonoise,qz_nonoise,uz_nonoise,qnz_scaled,unz_scaled, qu_ratio=noise_scale(qq_scaled_ma, uu_scaled_ma, qqnoise_scaled_ma, qz, uz, qnz, bins_z)
-
-    slope,offset=fit_power_law(ez,bz,bins_z,w,field,i)
+    qq_nonoise,uu_nonoise,qz_nonoise,uz_nonoise,q_scaled_noise,u_scaled_noise, qu_ratio=noise_scale(qq_scaled_ma, uu_scaled_ma, qqnoise_scaled_ma, qz, uz, qnz, bins_z)
 
 #Plot
 
-    plot_all(q_in, u_in, pol_in, w, center_pix_x, center_pix_y, width_deg, bins_z, qz, uz, qz_nonoise, uz_nonoise, qnz, qnz_scaled, unz_scaled, qq_nonoise, uu_nonoise, i, field, beam, qu_ratio)
+    plot_all(q_in, u_in, pol_in, w, center_pix_x, center_pix_y, width_deg, bins_z, qz, uz, qz_nonoise, uz_nonoise, qnz, q_scaled_noise, u_scaled_noise, qq_nonoise, uu_nonoise, i, field, beam, qu_ratio)
 
 
 
